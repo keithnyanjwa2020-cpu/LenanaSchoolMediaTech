@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Leaderboard · Media Core Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="vibrant-bg"></div>
+  <canvas id="orbit-canvas" style="opacity:0.4;"></canvas>
+
+  <div class="black-hole-container" style="transform:translate(-50%,-50%) scale(0.6); opacity:0.5; pointer-events:none;">
+    <div class="gravity-lens"></div>
+    <div class="horizon-ring outer"></div>
+    <div class="horizon-ring middle"></div>
+    <div class="horizon-ring inner"></div>
+    <div class="singularity"></div>
+  </div>
+
+  <nav class="nav-glass" id="navGlass">
+    <div class="nav-logo-glass" onclick="window.location.href='index.html'">MC</div>
+    <div class="nav-links-glass">
+      <a href="index.html">Home</a>
+      <a href="ideas.html">Ideas</a>
+      <a href="assignments.html">Assignments</a>
+      <a href="projects.html">Projects</a>
+      <a href="leaderboard.html" class="active">Leaderboard</a>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;"><div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle theme"></div><div id="authSection"></div></div>
+  </nav>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="page" id="page">
+    <section class="panel-liquid fade-section" style="margin-top:40px;">
+      <div class="panel-header-liquid">
+        <h2>🏆 Leaderboard</h2>
+        <span class="tag" id="totalPoints">0 total points</span>
+      </div>
+
+      <p class="small-note-liquid">
+        Earn points by sharing ideas, completing assignments, and creating projects. Compete with your classmates!
+      </p>
+
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="setPeriod('all')" data-period="all">All Time</button>
+        <button class="filter-tab" onclick="setPeriod('week')" data-period="week">This Week</button>
+        <button class="filter-tab" onclick="setPeriod('month')" data-period="month">This Month</button>
+      </div>
+
+      <div id="leaderboard-list"></div>
+
+      <div id="loading-state" style="text-align:center; padding:40px;">
+        <div class="spinner" style="width:40px; height:40px; border-width:3px; margin:0 auto;"></div>
+        <p style="margin-top:16px; color:var(--text-dim); font-size:0.85rem;">Loading leaderboard...</p>
+      </div>
+
+      <div id="empty-leaderboard" style="text-align:center; padding:60px 20px; display:none;">
+        <div style="font-size:3rem; margin-bottom:16px;">🏅</div>
+        <h3 style="font-size:1.1rem; color:var(--text-muted); margin-bottom:8px;">No data yet</h3>
+        <p style="font-size:0.85rem; color:var(--text-dim);">Start contributing to earn points!</p>
+      </div>
+    </section>
+
+    <section class="panel-liquid fade-section">
+      <div class="panel-header-liquid">
+        <h3>How to Earn Points</h3>
+      </div>
+      <div class="card-grid-liquid four-col">
+        <div class="card-liquid" style="text-align:center;">
+          <div style="font-size:2rem; margin-bottom:8px;">💡</div>
+          <h3 style="font-size:0.95rem;">Share Idea</h3>
+          <p class="small-note-liquid" style="margin-bottom:0;">+10 points</p>
+        </div>
+        <div class="card-liquid" style="text-align:center;">
+          <div style="font-size:2rem; margin-bottom:8px;">📋</div>
+          <h3 style="font-size:0.95rem;">Complete Assignment</h3>
+          <p class="small-note-liquid" style="margin-bottom:0;">+20 points</p>
+        </div>
+        <div class="card-liquid" style="text-align:center;">
+          <div style="font-size:2rem; margin-bottom:8px;">🚀</div>
+          <h3 style="font-size:0.95rem;">Create Project</h3>
+          <p class="small-note-liquid" style="margin-bottom:0;">+30 points</p>
+        </div>
+        <div class="card-liquid" style="text-align:center;">
+          <div style="font-size:2rem; margin-bottom:8px;">🔥</div>
+          <h3 style="font-size:0.95rem;">Streak Bonus</h3>
+          <p class="small-note-liquid" style="margin-bottom:0;">+5 points/day</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer-liquid">
+      <p>© 2026 Media Core Hub · Leaderboard · Full Stack Edition</p>
+    </footer>
+  </div>
+
+  <script src="api.js"></script>
+  <script>
+    function applyTheme() {
+      document.body.setAttribute('data-theme', getTheme());
+    }
+    applyTheme();
+    function toggleTheme() {
+      const next = getTheme() === 'dark' ? 'light' : 'dark';
+      setTheme(next);
+      applyTheme();
+      showToast(`${next === 'dark' ? '🌙' : '☀️'} Switched to ${next} mode`, 'info');
+    }
+
+    let currentPeriod = 'all';
+
+    function showToast(message, type = 'info', duration = 3000) {
+      const container = document.getElementById('toastContainer');
+      const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${message}</span>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add('show'));
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400);
+      }, duration);
+    }
+
+    function updateAuthNav() {
+      const user = getUser();
+      const authSection = document.getElementById('authSection');
+      if (user) {
+        const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
+        const avatarImg = user.avatar ? `<img src="${user.avatar}" alt="">` : initials;
+        const adminBadge = user.role === 'admin' ? '<span class="admin-badge">ADMIN</span>' : '';
+        authSection.innerHTML = `
+          <div class="nav-user" id="userMenuTrigger" onclick="toggleUserDropdown()">
+            <div class="nav-user-avatar">${avatarImg}</div>
+            <span class="nav-user-name">${user.name}</span>
+            ${adminBadge}
+          </div>
+          <div class="user-dropdown" id="userDropdown">
+            <div class="user-dropdown-item" onclick="window.location.href='dashboard.html'">📊 Dashboard</div>
+            <div class="user-dropdown-item" onclick="window.location.href='profile.html'">👤 Profile</div>
+            <div class="user-dropdown-item" onclick="window.location.href='settings.html'">⚙️ Settings</div>
+            <div class="user-dropdown-divider"></div>
+            <div class="user-dropdown-item" onclick="logout()" style="color:var(--danger);">🚪 Sign Out</div>
+          </div>
+        `;
+      } else {
+        authSection.innerHTML = `<a href="login.html" class="nav-cta-glass">Sign In</a>`;
+      }
+    }
+
+    function toggleUserDropdown() {
+      const dropdown = document.getElementById('userDropdown');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+
+    document.addEventListener('click', (e) => {
+      const dropdown = document.getElementById('userDropdown');
+      const trigger = document.getElementById('userMenuTrigger');
+      if (dropdown && trigger && !dropdown.contains(e.target) && !trigger.contains(e.target)) {
+        dropdown.classList.remove('open');
+      }
+    });
+
+    async function loadLeaderboard() {
+      try {
+        document.getElementById('loading-state').style.display = 'block';
+        document.getElementById('empty-leaderboard').style.display = 'none';
+        const users = await UsersAPI.getAll();
+        renderLeaderboard(users);
+      } catch (err) {
+        showToast('Failed to load leaderboard: ' + err.message, 'error');
+        document.getElementById('loading-state').style.display = 'none';
+      }
+    }
+
+    function renderLeaderboard(users) {
+      const list = document.getElementById('leaderboard-list');
+      const empty = document.getElementById('empty-leaderboard');
+      const loading = document.getElementById('loading-state');
+      loading.style.display = 'none';
+
+      const now = Date.now();
+      const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+      const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
+
+      let filtered = [...users];
+      if (currentPeriod === 'week') {
+        filtered = filtered.filter(u => new Date(u.createdAt).getTime() > weekAgo);
+      } else if (currentPeriod === 'month') {
+        filtered = filtered.filter(u => new Date(u.createdAt).getTime() > monthAgo);
+      }
+
+      const sorted = filtered.sort((a, b) => (b.points || 0) - (a.points || 0));
+      const total = sorted.reduce((sum, s) => sum + (s.points || 0), 0);
+      document.getElementById('totalPoints').textContent = `${total} total points`;
+
+      if (sorted.length === 0) {
+        list.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+      }
+
+      empty.style.display = 'none';
+      const medals = ['🥇', '🥈', '🥉'];
+      const currentUser = getUser();
+
+      list.innerHTML = sorted.map((s, i) => {
+        const isCurrentUser = currentUser && (s._id === currentUser.id || s.id === currentUser.id);
+        const rank = i + 1;
+        const medal = i < 3 ? medals[i] : `#${rank}`;
+        const highlight = isCurrentUser ? 'style="border-color:var(--accent); box-shadow:0 0 20px rgba(255,77,166,0.2);"' : '';
+        const adminBadge = s.role === 'admin' ? '<span class="tag admin" style="font-size:0.65rem; padding:2px 8px;">👨‍🏫 ADMIN</span>' : '';
+        const initials = s.name ? s.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
+        const avatarHTML = s.avatar ? `<img src="${s.avatar}" alt="" style="width:100%;height:100%;object-fit:cover;">` : initials;
+
+        return `
+          <div class="card-liquid" ${highlight} style="display:flex; align-items:center; gap:16px; padding:16px 20px; margin-bottom:10px;">
+            <div style="font-size:1.5rem; width:40px; text-align:center;">${medal}</div>
+            <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg, var(--accent), var(--accent-2)); display:flex; align-items:center; justify-content:center; font-size:1rem; font-weight:700; color:white; flex-shrink:0; overflow:hidden;">
+              ${avatarHTML}
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <h3 style="margin:0; font-size:1rem;">${s.name}</h3>
+                ${adminBadge}
+                ${isCurrentUser ? '<span class="tag" style="font-size:0.65rem; padding:2px 8px; background:var(--accent);">You</span>' : ''}
+              </div>
+              <p style="margin:4px 0 0; font-size:0.8rem; color:var(--text-dim);">${s.username || ''}</p>
+            </div>
+            <div style="text-align:right; flex-shrink:0;">
+              <div style="font-size:1.4rem; font-weight:700; background:linear-gradient(135deg, #fff, #ffb8d0); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">${s.points || 0}</div>
+              <div style="font-size:0.75rem; color:var(--text-dim);">points</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function setPeriod(period) {
+      currentPeriod = period;
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.period === period);
+      });
+      loadLeaderboard();
+    }
+
+    loadLeaderboard();
+    updateAuthNav();
+
+    // Subtle orbit
+    const orbitCanvas = document.getElementById('orbit-canvas');
+    const orbitCtx = orbitCanvas.getContext('2d');
+    let orbitParticles = [];
+
+    function resizeOrbit() { orbitCanvas.width = window.innerWidth; orbitCanvas.height = window.innerHeight; }
+    window.addEventListener('resize', resizeOrbit);
+    resizeOrbit();
+
+    for (let i = 0; i < 35; i++) {
+      orbitParticles.push({
+        angle: Math.random() * Math.PI * 2, distance: 220 + Math.random() * 280,
+        speed: 0.001 + Math.random() * 0.003, size: 0.5 + Math.random() * 1.5,
+        color: ['#ff9bf9', '#9bb6ff', '#8bffe0', '#ffffff'][Math.floor(Math.random() * 4)],
+        alpha: 0.15 + Math.random() * 0.25, trail: [], maxTrail: 4 + Math.floor(Math.random() * 6)
+      });
+    }
+
+    function orbitLoop() {
+      const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+      orbitCtx.clearRect(0, 0, orbitCanvas.width, orbitCanvas.height);
+      orbitParticles.forEach(p => {
+        p.angle += p.speed;
+        const x = cx + Math.cos(p.angle) * p.distance;
+        const y = cy + Math.sin(p.angle) * p.distance;
+        p.trail.push({ x, y });
+        if (p.trail.length > p.maxTrail) p.trail.shift();
+        if (p.trail.length > 1) {
+          orbitCtx.beginPath(); orbitCtx.moveTo(p.trail[0].x, p.trail[0].y);
+          for (let i = 1; i < p.trail.length; i++) orbitCtx.lineTo(p.trail[i].x, p.trail[i].y);
+          orbitCtx.strokeStyle = p.color; orbitCtx.lineWidth = p.size * 0.3;
+          orbitCtx.globalAlpha = p.alpha * 0.2; orbitCtx.stroke();
+        }
+        const head = p.trail[p.trail.length - 1];
+        if (head) {
+          orbitCtx.globalAlpha = p.alpha; orbitCtx.fillStyle = p.color;
+          orbitCtx.beginPath(); orbitCtx.arc(head.x, head.y, p.size, 0, Math.PI * 2); orbitCtx.fill();
+        }
+      });
+      orbitCtx.globalAlpha = 1;
+      requestAnimationFrame(orbitLoop);
+    }
+    orbitLoop();
+
+    // Nav
+    const navGlass = document.getElementById('navGlass');
+    setTimeout(() => navGlass.classList.add('visible'), 300);
+
+    const page = document.getElementById('page');
+    window.addEventListener('load', () => page.classList.add('is-loaded'));
+
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a');
+      if (!link) return;
+      const url = link.getAttribute('href');
+      if (!url || url.startsWith('#') || url.startsWith('mailto:')) return;
+      if (link.target === '_blank') return;
+      e.preventDefault();
+      page.classList.add('is-fading-out');
+      navGlass.style.opacity = '0';
+      navGlass.style.transform = 'translateX(-50%) translateY(-100%)';
+      setTimeout(() => window.location.href = url, 400);
+    });
+
+    const fadeSections = document.querySelectorAll('.fade-section');
+    const observer = new IntersectionObserver(
+      (entries) => { entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('is-visible'); }); },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+    fadeSections.forEach(sec => observer.observe(sec));
+  </script>
+</body>
+</html>

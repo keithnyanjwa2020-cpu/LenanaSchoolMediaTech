@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ideas · Media Core Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="vibrant-bg"></div>
+  <canvas id="orbit-canvas"></canvas>
+
+  <div class="black-hole-container" id="blackHole" title="Click to warp!">
+    <div class="gravity-lens"></div>
+    <div class="horizon-ring outer"></div>
+    <div class="horizon-ring middle"></div>
+    <div class="horizon-ring inner"></div>
+    <div class="singularity" id="singularity"></div>
+    <div class="hawking-particles" id="hawkingParticles"></div>
+    <div class="bh-tooltip">🌌 Singularity · Click to warp</div>
+  </div>
+
+  <nav class="nav-glass" id="navGlass">
+    <div class="nav-logo-glass" onclick="window.location.href='index.html'">MC</div>
+    <div class="nav-links-glass">
+      <a href="index.html">Home</a>
+      <a href="ideas.html" class="active">Ideas</a>
+      <a href="assignments.html">Assignments</a>
+      <a href="projects.html">Projects</a>
+      <a href="leaderboard.html">Leaderboard</a>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle theme"></div>
+      <div id="authSection"></div>
+    </div>
+  </nav>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Post Modal -->
+  <div class="modal-overlay" id="postModal">
+    <div class="modal-card" style="max-width: 560px;">
+      <div class="modal-header">
+        <h3>New Post</h3>
+        <button class="modal-close" onclick="closePostModal()">×</button>
+      </div>
+      <form id="postForm">
+        <div class="form-group">
+          <label class="form-label">Title</label>
+          <input type="text" class="form-input" id="postTitle" placeholder="What's on your mind?" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Content (optional)</label>
+          <textarea class="form-input" id="postContent" rows="3" placeholder="Add more details..." style="resize:vertical; font-family:inherit;"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Media</label>
+          <div class="upload-zone" id="uploadZone" onclick="document.getElementById('postFile').click()">
+            <div class="upload-zone-icon">📎</div>
+            <div class="upload-zone-text">Click to upload image, audio, or video</div>
+            <div class="upload-zone-hint">Or paste a link below</div>
+          </div>
+          <input type="file" id="postFile" style="display:none" accept="image/*,audio/*,video/*" onchange="handleFileSelect(this)" />
+          <input type="text" class="form-input" id="postMediaUrl" placeholder="Or paste a media URL (image, song, video)" style="margin-top:10px;" />
+          <div id="filePreview" style="margin-top:10px; display:none;"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Media Type</label>
+          <select class="form-input" id="postMediaType" style="cursor:pointer;">
+            <option value="none">Text Only</option>
+            <option value="image">📸 Image</option>
+            <option value="audio">🎵 Audio / Song</option>
+            <option value="video">🎬 Video</option>
+            <option value="link">🔗 Link</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-full primary" style="margin-top:8px;">Post</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="page" id="page">
+    <section class="panel-liquid fade-section" style="margin-top:40px;">
+      <div class="panel-header-liquid">
+        <h2>Ideas Board</h2>
+        <div class="panel-actions">
+          <span class="tag" id="postCount">0 posts</span>
+          <button class="btn-liquid small primary" id="newPostBtn" onclick="openPostModal()" style="display:none;">+ New Post</button>
+        </div>
+      </div>
+
+      <div class="search-bar">
+        <span>🔍</span>
+        <input type="text" id="searchPosts" placeholder="Search posts..." oninput="filterPosts()" />
+      </div>
+
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="setFilter('all')" data-filter="all">All</button>
+        <button class="filter-tab" onclick="setFilter('mine')" data-filter="mine">My Posts</button>
+        <button class="filter-tab" onclick="setFilter('recent')" data-filter="recent">Recent</button>
+        <button class="filter-tab" onclick="setFilter('media')" data-filter="media">With Media</button>
+      </div>
+
+      <div id="guestNotice" style="margin-bottom:20px;">
+        <p class="small-note-liquid">
+          📋 View all posts below. <a href="login.html" style="color:var(--accent);">Sign in</a> to create posts and comment.
+        </p>
+      </div>
+
+      <div id="post-list"></div>
+
+      <div id="empty-state" style="text-align:center; padding:60px 20px; display:none;">
+        <div style="font-size:3rem; margin-bottom:16px;">💭</div>
+        <h3 style="font-size:1.1rem; color:var(--text-muted); margin-bottom:8px;">No posts yet</h3>
+        <p style="font-size:0.85rem; color:var(--text-dim);">Be the first to share an idea!</p>
+      </div>
+
+      <div id="loading-state" style="text-align:center; padding:40px;">
+        <div class="spinner" style="width:40px; height:40px; border-width:3px; margin:0 auto;"></div>
+        <p style="margin-top:16px; color:var(--text-dim); font-size:0.85rem;">Loading posts...</p>
+      </div>
+    </section>
+
+    <footer class="footer-liquid">
+      <p>© 2026 Media Core Hub · Ideas · Full Stack Edition</p>
+    </footer>
+  </div>
+
+  <script src="api.js"></script>
+  <script>
+    let posts = [];
+    let currentFilter = 'all';
+    let searchQuery = '';
+    let selectedFile = null;
+
+    // Theme
+    function applyTheme() {
+      document.body.setAttribute('data-theme', getTheme());
+    }
+    applyTheme();
+    function toggleTheme() {
+      const next = getTheme() === 'dark' ? 'light' : 'dark';
+      setTheme(next);
+      applyTheme();
+      showToast(`${next === 'dark' ? '🌙' : '☀️'} Switched to ${next} mode`, 'info');
+    }
+
+    function showToast(message, type = 'info', duration = 3000) {
+      const container = document.getElementById('toastContainer');
+      const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${message}</span>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add('show'));
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400);
+      }, duration);
+    }
+
+    function updateAuthNav() {
+      const user = getUser();
+      const authSection = document.getElementById('authSection');
+      if (user) {
+        const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
+        const avatarImg = user.avatar ? `<img src="${user.avatar}" alt="">` : initials;
+        const adminBadge = user.role === 'admin' ? '<span class="admin-badge">ADMIN</span>' : '';
+        authSection.innerHTML = `
+          <div class="nav-user" id="userMenuTrigger" onclick="toggleUserDropdown()">
+            <div class="nav-user-avatar">${avatarImg}</div>
+            <span class="nav-user-name">${user.name}</span>
+            ${adminBadge}
+          </div>
+          <div class="user-dropdown" id="userDropdown">
+            <div class="user-dropdown-item" onclick="window.location.href='dashboard.html'">📊 Dashboard</div>
+            <div class="user-dropdown-item" onclick="window.location.href='profile.html'">👤 Profile</div>
+            <div class="user-dropdown-item" onclick="window.location.href='settings.html'">⚙️ Settings</div>
+            <div class="user-dropdown-divider"></div>
+            <div class="user-dropdown-item" onclick="logout()" style="color:var(--danger);">🚪 Sign Out</div>
+          </div>
+        `;
+        document.getElementById('newPostBtn').style.display = 'inline-flex';
+        document.getElementById('guestNotice').style.display = 'none';
+      } else {
+        authSection.innerHTML = `<a href="login.html" class="nav-cta-glass">Sign In</a>`;
+        document.getElementById('newPostBtn').style.display = 'none';
+      }
+    }
+
+    function toggleUserDropdown() {
+      const dropdown = document.getElementById('userDropdown');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+
+    document.addEventListener('click', (e) => {
+      const dropdown = document.getElementById('userDropdown');
+      const trigger = document.getElementById('userMenuTrigger');
+      if (dropdown && trigger && !dropdown.contains(e.target) && !trigger.contains(e.target)) {
+        dropdown.classList.remove('open');
+      }
+    });
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diff = (now - date) / 1000;
+      if (diff < 60) return 'Just now';
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+      if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function getAvatarHTML(user, size = 44) {
+      if (!user) return `<div class="post-avatar" style="width:${size}px;height:${size}px;font-size:${size*0.4}px;">?</div>`;
+      const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
+      if (user.avatar) {
+        return `<div class="post-avatar" style="width:${size}px;height:${size}px;"><img src="${user.avatar}" alt="${user.name}"></div>`;
+      }
+      return `<div class="post-avatar" style="width:${size}px;height:${size}px;font-size:${size*0.4}px;">${initials}</div>`;
+    }
+
+    function renderMedia(post) {
+      if (!post.mediaUrl || post.mediaType === 'none') return '';
+      if (post.mediaType === 'image') {
+        return `<div class="post-media"><img src="${escapeHtml(post.mediaUrl)}" alt="Post media" loading="lazy"></div>`;
+      }
+      if (post.mediaType === 'audio') {
+        return `<div class="post-media"><audio controls style="width:100%; padding:10px;"><source src="${escapeHtml(post.mediaUrl)}"></audio></div>`;
+      }
+      if (post.mediaType === 'video') {
+        return `<div class="post-media"><video controls style="width:100%; border-radius:16px;"><source src="${escapeHtml(post.mediaUrl)}"></video></div>`;
+      }
+      if (post.mediaType === 'link') {
+        return `<div class="post-media" style="padding:16px; background:rgba(255,255,255,0.04);"><a href="${escapeHtml(post.mediaUrl)}" target="_blank" style="color:var(--accent); text-decoration:none; font-size:0.9rem;">🔗 ${escapeHtml(post.mediaUrl)}</a></div>`;
+      }
+      return '';
+    }
+
+    function renderComments(post) {
+      if (!post.comments || post.comments.length === 0) return '';
+      return post.comments.map(c => `
+        <div class="comment">
+          ${getAvatarHTML(c.author, 32)}
+          <div class="comment-body">
+            <div class="comment-author">${escapeHtml(c.author?.name || 'Unknown')}</div>
+            <div class="comment-text">${escapeHtml(c.text)}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function createPostCard(post) {
+      const user = getUser();
+      const isOwner = user && post.author && (post.author._id === user.id || post.author.id === user.id);
+      const isAdmin = user && user.role === 'admin';
+      const hasLiked = user && post.likes && post.likes.some(l => l._id === user.id || l.id === user.id);
+      const likeCount = post.likes ? post.likes.length : 0;
+      const commentCount = post.comments ? post.comments.length : 0;
+
+      const card = document.createElement('div');
+      card.className = 'post-card';
+      card.id = `post-${post._id}`;
+      card.innerHTML = `
+        <div class="post-header">
+          ${getAvatarHTML(post.author)}
+          <div class="post-meta">
+            <div class="post-author">${escapeHtml(post.author?.name || 'Unknown')}</div>
+            <div class="post-time">${formatDate(post.createdAt)}</div>
+          </div>
+          ${isOwner || isAdmin ? `
+          <div class="card-actions" style="opacity:1; transform:none; position:static;">
+            <button class="card-action-btn delete" onclick="deletePost('${post._id}')" title="Delete">🗑</button>
+          </div>` : ''}
+        </div>
+        <h3 style="font-size:1.1rem; font-weight:600; margin-bottom:8px; color:var(--text-main);">${escapeHtml(post.title)}</h3>
+        ${post.content ? `<div class="post-content">${escapeHtml(post.content)}</div>` : ''}
+        ${renderMedia(post)}
+        <div class="post-actions">
+          <button class="post-action ${hasLiked ? 'liked' : ''}" onclick="toggleLike('${post._id}')" id="like-btn-${post._id}">
+            <span>${hasLiked ? '❤️' : '🤍'}</span> <span id="like-count-${post._id}">${likeCount}</span>
+          </button>
+          <button class="post-action" onclick="toggleComments('${post._id}')">
+            <span>💬</span> ${commentCount}
+          </button>
+          <button class="post-action" onclick="sharePost('${post._id}')">
+            <span>↗️</span> Share
+          </button>
+        </div>
+        <div class="comments-section" id="comments-${post._id}" style="display:none;">
+          <div id="comments-list-${post._id}">${renderComments(post)}</div>
+          ${user ? `
+          <div class="comment-input">
+            <input type="text" id="comment-input-${post._id}" placeholder="Add a comment..." onkeydown="if(event.key==='Enter') addComment('${post._id}')" />
+            <button class="btn-liquid small primary" onclick="addComment('${post._id}')">Post</button>
+          </div>
+          ` : '<p style="font-size:0.8rem; color:var(--text-dim); margin-top:8px;"><a href="login.html" style="color:var(--accent);">Sign in</a> to comment</p>'}
+        </div>
+      `;
+      return card;
+    }
+
+    async function loadPosts() {
+      try {
+        document.getElementById('loading-state').style.display = 'block';
+        document.getElementById('empty-state').style.display = 'none';
+        posts = await PostsAPI.getAll();
+        renderPosts();
+      } catch (err) {
+        showToast('Failed to load posts: ' + err.message, 'error');
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('empty-state').style.display = 'block';
+      }
+    }
+
+    function renderPosts() {
+      const list = document.getElementById('post-list');
+      const empty = document.getElementById('empty-state');
+      const loading = document.getElementById('loading-state');
+      loading.style.display = 'none';
+
+      let filtered = [...posts];
+      const user = getUser();
+
+      if (currentFilter === 'mine' && user) {
+        filtered = filtered.filter(p => p.author && (p.author._id === user.id || p.author.id === user.id));
+      } else if (currentFilter === 'recent') {
+        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        filtered = filtered.filter(p => new Date(p.createdAt).getTime() > weekAgo);
+      } else if (currentFilter === 'media') {
+        filtered = filtered.filter(p => p.mediaType && p.mediaType !== 'none');
+      }
+
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter(p => 
+          (p.title && p.title.toLowerCase().includes(q)) ||
+          (p.content && p.content.toLowerCase().includes(q)) ||
+          (p.author?.name && p.author.name.toLowerCase().includes(q))
+        );
+      }
+
+      document.getElementById('postCount').textContent = `${filtered.length} post${filtered.length !== 1 ? 's' : ''}`;
+
+      if (filtered.length === 0) {
+        list.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+      list.innerHTML = '';
+      filtered.forEach(p => list.appendChild(createPostCard(p)));
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.filter === filter);
+      });
+      renderPosts();
+    }
+
+    function filterPosts() {
+      searchQuery = document.getElementById('searchPosts').value.trim();
+      renderPosts();
+    }
+
+    function openPostModal() {
+      if (!isLoggedIn()) {
+        showToast('Please sign in to post', 'warning');
+        return;
+      }
+      document.getElementById('postModal').classList.add('open');
+    }
+
+    function closePostModal() {
+      document.getElementById('postModal').classList.remove('open');
+      document.getElementById('postForm').reset();
+      selectedFile = null;
+      document.getElementById('filePreview').style.display = 'none';
+      document.getElementById('filePreview').innerHTML = '';
+    }
+
+    document.getElementById('postModal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('postModal')) closePostModal();
+    });
+
+    function handleFileSelect(input) {
+      if (input.files && input.files[0]) {
+        selectedFile = input.files[0];
+        const preview = document.getElementById('filePreview');
+        preview.style.display = 'block';
+        preview.innerHTML = `<p style="font-size:0.85rem; color:var(--text-muted);">📎 ${selectedFile.name} (${(selectedFile.size/1024).toFixed(1)} KB)</p>`;
+
+        if (selectedFile.type.startsWith('image/')) document.getElementById('postMediaType').value = 'image';
+        else if (selectedFile.type.startsWith('audio/')) document.getElementById('postMediaType').value = 'audio';
+        else if (selectedFile.type.startsWith('video/')) document.getElementById('postMediaType').value = 'video';
+      }
+    }
+
+    document.getElementById('postForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('postTitle').value.trim();
+      const content = document.getElementById('postContent').value.trim();
+      const mediaType = document.getElementById('postMediaType').value;
+      let mediaUrl = document.getElementById('postMediaUrl').value.trim();
+
+      if (!title) {
+        showToast('Title is required', 'warning');
+        return;
+      }
+
+      try {
+        if (selectedFile) {
+          showToast('Uploading media...', 'info');
+          const uploadData = await UploadAPI.uploadFile(selectedFile);
+          mediaUrl = uploadData.url;
+        }
+
+        await PostsAPI.create({ title, content, mediaUrl, mediaType });
+        showToast('Post created! 🎉', 'success');
+        closePostModal();
+        loadPosts();
+      } catch (err) {
+        showToast(err.message || 'Failed to create post', 'error');
+      }
+    });
+
+    async function toggleLike(postId) {
+      if (!isLoggedIn()) {
+        showToast('Sign in to like posts', 'warning');
+        return;
+      }
+      try {
+        const result = await PostsAPI.like(postId);
+        const btn = document.getElementById(`like-btn-${postId}`);
+        const count = document.getElementById(`like-count-${postId}`);
+        if (btn && count) {
+          btn.classList.toggle('liked', result.liked);
+          btn.querySelector('span').textContent = result.liked ? '❤️' : '🤍';
+          count.textContent = result.likes;
+        }
+        showToast(result.liked ? 'Liked! ❤️' : 'Unliked', 'info', 1500);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function toggleComments(postId) {
+      const section = document.getElementById(`comments-${postId}`);
+      section.style.display = section.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function addComment(postId) {
+      const input = document.getElementById(`comment-input-${postId}`);
+      const text = input.value.trim();
+      if (!text) return;
+      try {
+        const comment = await PostsAPI.comment(postId, text);
+        input.value = '';
+
+        // Add comment to UI immediately
+        const list = document.getElementById(`comments-list-${postId}`);
+        const user = getUser();
+        const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
+        const avatarHTML = user.avatar ? `<img src="${user.avatar}" alt="">` : initials;
+        const newComment = document.createElement('div');
+        newComment.className = 'comment';
+        newComment.innerHTML = `
+          <div class="post-avatar" style="width:32px;height:32px;font-size:13px;">${avatarHTML}</div>
+          <div class="comment-body">
+            <div class="comment-author">${user.name}</div>
+            <div class="comment-text">${escapeHtml(text)}</div>
+          </div>
+        `;
+        list.appendChild(newComment);
+
+        showToast('Comment added! 💬', 'success');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function deletePost(postId) {
+      if (!confirm('Delete this post?')) return;
+      try {
+        await PostsAPI.delete(postId);
+        showToast('Post deleted', 'info');
+        loadPosts();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function sharePost(postId) {
+      const url = `${window.location.origin}/ideas.html#post-${postId}`;
+      navigator.clipboard.writeText(url).then(() => {
+        showToast('Link copied to clipboard!', 'success');
+      });
+    }
+
+    // Initialize
+    loadPosts();
+    updateAuthNav();
+
+    // Nav
+    const navGlass = document.getElementById('navGlass');
+    setTimeout(() => navGlass.classList.add('visible'), 300);
+
+    const page = document.getElementById('page');
+    window.addEventListener('load', () => page.classList.add('is-loaded'));
+
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a');
+      if (!link) return;
+      const url = link.getAttribute('href');
+      if (!url || url.startsWith('#') || url.startsWith('mailto:') || url.startsWith('http')) return;
+      if (link.target === '_blank') return;
+      e.preventDefault();
+      page.classList.add('is-fading-out');
+      navGlass.style.opacity = '0';
+      navGlass.style.transform = 'translateX(-50%) translateY(-100%)';
+      setTimeout(() => window.location.href = url, 400);
+    });
+
+    const fadeSections = document.querySelectorAll('.fade-section');
+    const observer = new IntersectionObserver(
+      (entries) => { entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('is-visible'); }); },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+    fadeSections.forEach(sec => observer.observe(sec));
+  </script>
+</body>
+</html>
