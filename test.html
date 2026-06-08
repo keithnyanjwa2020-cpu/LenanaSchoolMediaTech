@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DIAGNOSTIC - Media Core Hub</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { font-family: monospace; background: #0a0515; color: #fff; padding: 20px; }
+.pass { color: #00e5a0; }
+.fail { color: #ff5b6b; }
+.warn { color: #ffc300; }
+.info { color: #00d4ff; }
+.box { border: 1px solid #333; padding: 15px; margin: 10px 0; border-radius: 8px; }
+h1 { color: #ff4da6; }
+h2 { color: #8b5cf6; margin-top: 30px; }
+pre { background: #1a0e2e; padding: 10px; border-radius: 4px; overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>🔍 DIAGNOSTIC PAGE</h1>
+<p>This page checks if everything is working. Screenshot this and send to developer.</p>
+
+<div class="box">
+<h2>1. CSS Check</h2>
+<div id="css-check">Checking...</div>
+</div>
+
+<div class="box">
+<h2>2. JavaScript Check</h2>
+<div id="js-check">Checking...</div>
+</div>
+
+<div class="box">
+<h2>3. API Connection</h2>
+<div id="api-check">Checking...</div>
+</div>
+
+<div class="box">
+<h2>4. Error Log</h2>
+<div id="error-log">No errors yet...</div>
+</div>
+
+<div class="box">
+<h2>5. Browser Info</h2>
+<div id="browser-info">Loading...</div>
+</div>
+
+<script src="api.js"></script>
+<script>
+var errors = [];
+
+function log(msg, type) {
+var color = type === 'pass' ? '#00e5a0' : type === 'fail' ? '#ff5b6b' : type === 'warn' ? '#ffc300' : '#00d4ff';
+return '<span style="color:' + color + '">' + msg + '</span>';
+}
+
+// Check CSS
+var cssCheck = document.getElementById('css-check');
+try {
+var bodyBg = getComputedStyle(document.body).backgroundColor;
+if (bodyBg && bodyBg !== 'rgba(0, 0, 0, 0)') {
+cssCheck.innerHTML = log('✅ CSS is loading', 'pass') + '<br>Background: ' + bodyBg;
+} else {
+cssCheck.innerHTML = log('❌ CSS not loading properly', 'fail');
+}
+} catch (e) {
+cssCheck.innerHTML = log('❌ CSS check failed: ' + e.message, 'fail');
+errors.push('CSS: ' + e.message);
+}
+
+// Check JS
+var jsCheck = document.getElementById('js-check');
+try {
+if (typeof getUser === 'function') {
+jsCheck.innerHTML = log('✅ api.js loaded', 'pass') + '<br>getUser() exists';
+} else {
+jsCheck.innerHTML = log('❌ api.js NOT loaded', 'fail') + '<br>getUser() missing';
+errors.push('JS: api.js not loaded');
+}
+} catch (e) {
+jsCheck.innerHTML = log('❌ JS check failed: ' + e.message, 'fail');
+errors.push('JS: ' + e.message);
+}
+
+// Check API
+var apiCheck = document.getElementById('api-check');
+try {
+fetch('/api/health').then(function(r) {
+if (r.ok) {
+return r.json().then(function(data) {
+apiCheck.innerHTML = log('✅ API is running', 'pass') + '<br>Status: ' + data.status + '<br>DB: ' + data.db;
+});
+} else {
+apiCheck.innerHTML = log('❌ API returned error: ' + r.status, 'fail');
+errors.push('API: HTTP ' + r.status);
+}
+}).catch(function(e) {
+apiCheck.innerHTML = log('❌ API connection failed: ' + e.message, 'fail');
+errors.push('API: ' + e.message);
+});
+} catch (e) {
+apiCheck.innerHTML = log('❌ API check failed: ' + e.message, 'fail');
+errors.push('API: ' + e.message);
+}
+
+// Capture errors
+window.onerror = function(msg, url, line, col, err) {
+var errorMsg = msg + ' at ' + url + ':' + line;
+errors.push(errorMsg);
+document.getElementById('error-log').innerHTML = '<pre>' + errors.join('\n') + '</pre>';
+return false;
+};
+
+window.addEventListener('error', function(e) {
+var errorMsg = e.message + ' at ' + e.filename + ':' + e.lineno;
+errors.push(errorMsg);
+document.getElementById('error-log').innerHTML = '<pre>' + errors.join('\n') + '</pre>';
+});
+
+window.addEventListener('unhandledrejection', function(e) {
+var errorMsg = 'Promise: ' + e.reason;
+errors.push(errorMsg);
+document.getElementById('error-log').innerHTML = '<pre>' + errors.join('\n') + '</pre>';
+});
+
+// Browser info
+document.getElementById('browser-info').innerHTML = 
+'User Agent: ' + navigator.userAgent + '<br>' +
+'URL: ' + window.location.href + '<br>' +
+'Host: ' + window.location.host;
+</script>
+</body>
+</html>
