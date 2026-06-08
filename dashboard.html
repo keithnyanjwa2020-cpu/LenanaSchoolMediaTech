@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard - Media Core Hub</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="vibrant-bg"></div>
+
+<nav class="nav-glass visible" id="navGlass">
+<div class="nav-logo-glass" onclick="window.location.href='index.html'">MC</div>
+<div class="nav-links-glass">
+<a href="index.html">Home</a>
+<a href="ideas.html">Ideas</a>
+<a href="shop.html">Shop</a>
+<a href="assignments.html">Assignments</a>
+<a href="projects.html">Projects</a>
+<a href="leaderboard.html">Leaderboard</a>
+</div>
+<div style="display:flex; align-items:center; gap:10px;">
+<div class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"></div>
+<div id="authSection"></div>
+</div>
+</nav>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="page is-loaded" id="page">
+
+<div class="dashboard-grid">
+<aside class="sidebar-liquid">
+<div class="sidebar-profile">
+<div class="sidebar-avatar" id="sidebarAvatar" style="width:80px; height:80px; font-size:2rem; border-radius:24px; cursor:pointer; position:relative;" onclick="document.getElementById('pfpUpload').click()">
+?
+<div style="position:absolute; bottom:0; right:0; width:28px; height:28px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:14px; border:2px solid var(--bg); z-index:2;">📷</div>
+</div>
+<input type="file" id="pfpUpload" style="display:none" accept="image/*" onchange="uploadPFP(this)">
+<div class="sidebar-name" id="profileName">Loading...</div>
+<div class="sidebar-role" id="profileRole">Student</div>
+<div id="profileBadges" style="margin-top:8px; display:flex; gap:4px; flex-wrap:wrap; justify-content:center;"></div>
+</div>
+<div class="sidebar-menu">
+<a href="dashboard.html" class="sidebar-item active">📊 Dashboard</a>
+<a href="profile.html" class="sidebar-item">👤 Profile</a>
+<a href="ideas.html" class="sidebar-item">💡 My Ideas</a>
+<a href="assignments.html" class="sidebar-item">📋 Assignments</a>
+<a href="shop.html" class="sidebar-item">🛒 Shop</a>
+<a href="settings.html" class="sidebar-item">⚙️ Settings</a>
+<div class="sidebar-item" onclick="logout()" style="color:var(--danger);">🚪 Sign Out</div>
+</div>
+</aside>
+
+<main class="main-content-liquid">
+
+<!-- Error Log Panel -->
+<div class="panel-liquid" style="margin-bottom:24px; border:2px solid var(--danger);">
+<div class="panel-header-liquid">
+<h3 style="color:var(--danger);">🐛 Error Log</h3>
+<div class="panel-actions">
+<button class="btn-liquid small ghost" onclick="copyErrors()">📋 Copy</button>
+<button class="btn-liquid small danger" onclick="clearErrors()">🗑 Clear</button>
+</div>
+</div>
+<div id="errorLogDisplay" style="background:var(--bg-2); border-radius:12px; padding:16px; max-height:300px; overflow-y:auto; font-family:'Courier New', monospace; font-size:0.75rem; color:var(--text-muted); white-space:pre-wrap; word-break:break-word; border:1px solid var(--panel-border);">
+No errors yet. Use the browser console (F12) or click "Copy" to see errors.
+</div>
+<p style="margin-top:10px; font-size:0.8rem; color:var(--text-dim);">
+💡 <strong>How to use:</strong> When something breaks, come here and click "📋 Copy". Paste the errors to the developer.
+</p>
+</div>
+
+<div class="stats-row">
+<div class="stat-card">
+<div class="stat-value" id="statIdeas">0</div>
+<div class="stat-label">Ideas</div>
+</div>
+<div class="stat-card">
+<div class="stat-value" id="statProjects">0</div>
+<div class="stat-label">Projects</div>
+</div>
+<div class="stat-card">
+<div class="stat-value" id="statPoints">0</div>
+<div class="stat-label">Points</div>
+</div>
+<div class="stat-card">
+<div class="stat-value" id="statRank">#--</div>
+<div class="stat-label">Rank</div>
+</div>
+</div>
+
+<div class="panel-liquid">
+<div class="panel-header-liquid">
+<h3>Recent Contributions</h3>
+</div>
+<div id="contributionsList"></div>
+<div id="emptyContributions" style="text-align:center; padding:40px; color:var(--text-dim); display:none;">
+No contributions yet. Start sharing ideas!
+</div>
+</div>
+
+</main>
+</div>
+
+<footer class="footer-liquid">
+<p>2026 Media Core Hub - Full Stack Edition</p>
+</footer>
+</div>
+
+<script src="api.js"></script>
+<script>
+function applyTheme() {
+document.body.setAttribute('data-theme', getTheme());
+}
+applyTheme();
+
+function toggleTheme() {
+var next = getTheme() === 'dark' ? 'light' : 'dark';
+setTheme(next);
+applyTheme();
+showToast((next === 'dark' ? 'Moon' : 'Sun') + ' mode', 'info');
+}
+
+function showToast(message, type, duration) {
+var container = document.getElementById('toastContainer');
+var toast = document.createElement('div');
+toast.className = 'toast ' + (type || 'info');
+toast.innerHTML = '<span>' + message + '</span>';
+container.appendChild(toast);
+setTimeout(function() { toast.classList.add('show'); }, 10);
+setTimeout(function() {
+toast.classList.remove('show');
+setTimeout(function() { toast.remove(); }, 400);
+}, duration || 3000);
+}
+
+function updateAuthNav() {
+var user = getUser();
+var authSection = document.getElementById('authSection');
+if (user) {
+var initials = user.name ? user.name.split(' ').map(function(n) { return n[0]; }).join('').toUpperCase().slice(0, 2) : '?';
+var avatarImg = user.avatar ? '<img src="' + user.avatar + '" style="width:100%;height:100%;object-fit:cover;">' : initials;
+var adminBadge = user.role === 'admin' ? '<span class="admin-badge">ADMIN</span>' : '';
+authSection.innerHTML = '<div class="nav-user" id="userMenuTrigger" onclick="toggleUserDropdown()" style="cursor:pointer;"><div class="nav-user-avatar">' + avatarImg + '</div><span class="nav-user-name">' + user.name + '</span>' + adminBadge + '</div><div class="user-dropdown" id="userDropdown"><div class="user-dropdown-item" onclick="window.location.href=\'dashboard.html\'">📊 Dashboard</div><div class="user-dropdown-item" onclick="window.location.href=\'profile.html\'">👤 Profile</div><div class="user-dropdown-item" onclick="window.location.href=\'settings.html\'">⚙️ Settings</div><div class="user-dropdown-divider"></div><div class="user-dropdown-item" onclick="logout()" style="color:var(--danger);">🚪 Sign Out</div></div>';
+} else {
+authSection.innerHTML = '<a href="login.html" class="nav-cta-glass">Sign In</a>';
+}
+}
+
+function toggleUserDropdown() {
+var dropdown = document.getElementById('userDropdown');
+if (dropdown) dropdown.classList.toggle('open');
+}
+
+document.addEventListener('click', function(e) {
+var dropdown = document.getElementById('userDropdown');
+var trigger = document.getElementById('userMenuTrigger');
+if (dropdown && trigger && !dropdown.contains(e.target) && !trigger.contains(e.target)) {
+dropdown.classList.remove('open');
+}
+});
+
+function updateErrorDisplay() {
+var display = document.getElementById('errorLogDisplay');
+if (!display) return;
+var log = showErrorLog();
+display.textContent = log || 'No errors captured yet.';
+}
+
+function copyErrors() {
+var log = showErrorLog();
+if (!log) {
+showToast('No errors to copy', 'info');
+return;
+}
+navigator.clipboard.writeText(log).then(function() {
+showToast('Errors copied! Paste them to the developer.', 'success');
+}).catch(function() {
+var textarea = document.createElement('textarea');
+textarea.value = log;
+document.body.appendChild(textarea);
+textarea.select();
+document.execCommand('copy');
+document.body.removeChild(textarea);
+showToast('Errors copied! Paste them to the developer.', 'success');
+});
+}
+
+function clearErrors() {
+clearErrorLog();
+updateErrorDisplay();
+showToast('Error log cleared', 'info');
+}
+
+setInterval(updateErrorDisplay, 5000);
+updateErrorDisplay();
+
+async function populateDashboard() {
+var user = getUser();
+if (!user) {
+showToast('Please sign in first', 'warning');
+setTimeout(function() { window.location.href = 'login.html'; }, 1000);
+return;
+}
+
+var initials = user.name ? user.name.split(' ').map(function(n) { return n[0]; }).join('').toUpperCase().slice(0, 2) : '?';
+var avatarEl = document.getElementById('sidebarAvatar');
+if (user.avatar) {
+avatarEl.innerHTML = '<img src="' + user.avatar + '" alt="" style="width:100%;height:100%;object-fit:cover; border-radius:inherit;"><div style="position:absolute; bottom:0; right:0; width:28px; height:28px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:14px; border:2px solid var(--bg); z-index:2;">📷</div>';
+} else {
+avatarEl.innerHTML = initials + '<div style="position:absolute; bottom:0; right:0; width:28px; height:28px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:14px; border:2px solid var(--bg); z-index:2;">📷</div>';
+}
+
+document.getElementById('profileName').textContent = user.name;
+document.getElementById('profileRole').textContent = user.role === 'admin' ? 'Admin' : 'Student';
+
+// Show badges
+var badgesHtml = '';
+if (user.badges && user.badges.length > 0) {
+user.badges.forEach(function(badgeId) {
+var badgeMap = {
+'badge_verified': { name: 'Verified', class: 'verified', icon: '✓' },
+'badge_early': { name: 'Early', class: 'early', icon: '🌟' },
+'badge_top': { name: 'Top', class: 'top', icon: '🏆' },
+'badge_dev': { name: 'Dev', class: 'dev', icon: '💻' }
+};
+var badge = badgeMap[badgeId];
+if (badge) {
+badgesHtml += '<span class="badge ' + badge.class + '">' + badge.icon + ' ' + badge.name + '</span>';
+}
+});
+}
+document.getElementById('profileBadges').innerHTML = badgesHtml;
+
+try {
+var posts = await PostsAPI.getAll().catch(function() { return []; });
+var assignments = await AssignmentsAPI.getAll().catch(function() { return []; });
+var projects = await ProjectsAPI.getAll().catch(function() { return []; });
+var users = await UsersAPI.getAll().catch(function() { return []; });
+
+var userPosts = posts.filter(function(p) { return p.author && (p.author._id === user.id || p.author.id === user.id); });
+var userProjects = projects.filter(function(p) { return p.createdBy && (p.createdBy._id === user.id || p.createdBy.id === user.id); });
+var overdue = assignments.filter(function(a) { return new Date(a.dueDate) < new Date(); });
+
+document.getElementById('statIdeas').textContent = userPosts.length;
+document.getElementById('statProjects').textContent = userProjects.length;
+document.getElementById('statPoints').textContent = user.points || 0;
+
+var sortedUsers = users.sort(function(a, b) { return (b.points || 0) - (a.points || 0); });
+var rank = sortedUsers.findIndex(function(u) { return u._id === user.id || u.id === user.id; }) + 1;
+document.getElementById('statRank').textContent = rank > 0 ? '#' + rank : '#--';
+
+var contributions = [];
+userPosts.forEach(function(p) {
+contributions.push({ type: 'idea', title: p.title, date: p.createdAt });
+});
+userProjects.forEach(function(p) {
+contributions.push({ type: 'project', title: p.name, date: p.createdAt });
+});
+contributions.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+contributions = contributions.slice(0, 10);
+
+var contribList = document.getElementById('contributionsList');
+var emptyContrib = document.getElementById('emptyContributions');
+
+if (contributions.length === 0) {
+contribList.innerHTML = '';
+emptyContrib.style.display = 'block';
+} else {
+emptyContrib.style.display = 'none';
+var icons = { idea: '💡', project: '🚀' };
+contribList.innerHTML = contributions.map(function(c) {
+var date = new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+return '<div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--panel-border);"><div style="width:36px; height:36px; border-radius:10px; background:var(--card-bg); display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0;">' + icons[c.type] + '</div><div style="flex:1;"><div style="font-size:0.9rem; font-weight:600; color:var(--text-main);">' + c.title + '</div><div style="font-size:0.75rem; color:var(--text-dim);">' + date + '</div></div></div>';
+}).join('');
+}
+} catch (err) {
+console.error('Dashboard load error:', err);
+captureError('Dashboard load failed: ' + err.message, 'dashboard.html', 0, 0, err);
+}
+}
+
+async function uploadPFP(input) {
+if (!input.files || !input.files[0]) return;
+try {
+showToast('Uploading...', 'info');
+var uploadData = await UploadAPI.uploadAvatar(input.files[0]);
+var user = getUser();
+user.avatar = uploadData.url;
+setUser(user);
+populateDashboard();
+updateAuthNav();
+showToast('Profile picture updated!', 'success');
+} catch (err) {
+showToast(err.message || 'Upload failed', 'error');
+}
+}
+
+updateAuthNav();
+populateDashboard();
+
+var navGlass = document.getElementById('navGlass');
+setTimeout(function() { navGlass.classList.add('visible'); }, 300);
+
+var page = document.getElementById('page');
+window.addEventListener('load', function() { page.classList.add('is-loaded'); });
+
+document.addEventListener('click', function(e) {
+var link = e.target.closest('a');
+if (!link) return;
+var url = link.getAttribute('href');
+if (!url || url.startsWith('#') || url.startsWith('mailto:')) return;
+if (link.target === '_blank') return;
+e.preventDefault();
+page.classList.add('is-fading-out');
+navGlass.style.opacity = '0';
+setTimeout(function() { window.location.href = url; }, 300);
+});
+</script>
+</body>
+</html>
