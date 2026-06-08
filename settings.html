@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Settings · Media Core Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="vibrant-bg"></div>
+  <canvas id="orbit-canvas" style="opacity:0.3;"></canvas>
+
+  <nav class="nav-glass" id="navGlass">
+    <div class="nav-logo-glass" onclick="window.location.href='index.html'">MC</div>
+    <div class="nav-links-glass">
+      <a href="index.html">Home</a>
+      <a href="ideas.html">Ideas</a>
+      <a href="shop.html">Shop</a>
+      <a href="assignments.html">Assignments</a>
+      <a href="projects.html">Projects</a>
+      <a href="leaderboard.html">Leaderboard</a>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle theme"></div>
+      <div id="authSection"></div>
+    </div>
+  </nav>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="page" id="page">
+    <div class="dashboard-grid">
+      <aside class="sidebar-liquid">
+        <div class="sidebar-profile">
+          <div class="sidebar-avatar" id="settingsAvatar" style="width:80px; height:80px; font-size:2rem; border-radius:24px;">?</div>
+          <div class="sidebar-name" id="settingsName">Loading...</div>
+          <div class="sidebar-role" id="settingsRole">Student</div>
+        </div>
+        <div class="sidebar-menu">
+          <a href="dashboard.html" class="sidebar-item">📊 Dashboard</a>
+          <a href="profile.html" class="sidebar-item">👤 Profile</a>
+          <a href="ideas.html" class="sidebar-item">💡 My Ideas</a>
+          <a href="assignments.html" class="sidebar-item">📋 Assignments</a>
+          <a href="settings.html" class="sidebar-item active">⚙️ Settings</a>
+          <div class="sidebar-item" onclick="logout()" style="color:var(--danger);">🚪 Sign Out</div>
+        </div>
+      </aside>
+
+      <main class="main-content-liquid">
+        <div class="panel-liquid" style="margin-top:0;">
+          <div class="panel-header-liquid">
+            <h2>Settings</h2>
+          </div>
+
+          <!-- Admin Panel - Only visible to admins -->
+          <div id="adminPanel" style="display:none; margin-bottom:32px;">
+            <h3 style="font-size:1.1rem; margin-bottom:16px; color:var(--admin);">👨‍🏫 Admin Panel (Kasuku)</h3>
+
+            <div class="stats-row" style="margin-bottom:20px;">
+              <div class="stat-card">
+                <div class="stat-value" id="adminTotalUsers">0</div>
+                <div class="stat-label">Total Users</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="adminTotalAdmins">0</div>
+                <div class="stat-label">Admins</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="adminPendingReq">0</div>
+                <div class="stat-label">Pending Requests</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="adminTotalReq">0</div>
+                <div class="stat-label">Total Requests</div>
+              </div>
+            </div>
+
+            <div class="card-liquid" style="margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div>
+                  <h3 style="margin:0; font-size:0.95rem;">📝 Pending Admin Requests</h3>
+                  <p style="margin:4px 0 0; font-size:0.8rem; color:var(--text-dim);">Review and approve new admin accounts</p>
+                </div>
+                <span class="tag admin" id="pendingCount">0 pending</span>
+              </div>
+              <div id="pendingRequests"></div>
+              <div id="noPending" style="display:none; padding:20px; text-align:center; color:var(--text-dim);">
+                <div style="font-size:2rem; margin-bottom:8px;">✅</div>
+                <p>No pending admin requests</p>
+              </div>
+            </div>
+
+            <div class="card-liquid" style="margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div>
+                  <h3 style="margin:0; font-size:0.95rem;">📜 Request History</h3>
+                  <p style="margin:4px 0 0; font-size:0.8rem; color:var(--text-dim);">All approved and rejected requests</p>
+                </div>
+                <button class="btn-liquid small ghost" onclick="loadRequestHistory()">🔄 Refresh</button>
+              </div>
+              <div id="requestHistory"></div>
+              <div id="noHistory" style="display:none; padding:20px; text-align:center; color:var(--text-dim);">
+                <p>No request history yet</p>
+              </div>
+            </div>
+
+            <div class="card-liquid">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div>
+                  <h3 style="margin:0; font-size:0.95rem;">👥 All Users</h3>
+                  <p style="margin:4px 0 0; font-size:0.8rem; color:var(--text-dim);">Manage registered accounts</p>
+                </div>
+                <button class="btn-liquid small ghost" onclick="toggleUsersList()">👁 View All</button>
+              </div>
+              <div id="allUsersList" style="display:none;"></div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:32px;">
+            <h3 style="font-size:1.1rem; margin-bottom:16px; color:var(--text-muted);">🔔 Notifications</h3>
+            <div class="card-liquid" style="margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h3 style="margin:0; font-size:0.95rem;">New Assignment Alerts</h3>
+                  <p style="margin:4px 0 0; font-size:0.8rem; color:var(--text-dim);">Get notified when teachers post assignments</p>
+                </div>
+                <label class="checkbox-wrap" style="margin:0;">
+                  <input type="checkbox" id="notifyAssignments" checked />
+                </label>
+              </div>
+            </div>
+            <div class="card-liquid" style="margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h3 style="margin:0; font-size:0.95rem;">Idea Reactions</h3>
+                  <p style="margin:4px 0 0; font-size:0.8rem; color:var(--text-dim);">Notify when someone engages with your ideas</p>
+                </div>
+                <label class="checkbox-wrap" style="margin:0;">
+                  <input type="checkbox" id="notifyIdeas" checked />
+                </label>
+              </div>
+            </div>
+            <div class="card-liquid">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h3 style="margin:0; font-size:0.95rem;">Leaderboard Updates</h3>
+                  <p style="margin:4px 0 0; font-size:0.8rem; color:var(--text-dim);">Weekly rank and point summaries</p>
+                </div>
+                <label class="checkbox-wrap" style="margin:0;">
+                  <input type="checkbox" id="notifyLeaderboard" />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:32px;">
+            <h3 style="font-size:1.1rem; margin-bottom:16px; color:var(--text-muted);">🎨 Appearance</h3>
+            <div class="card-liquid" style="margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h3 style="margin:0; font-size:0.95rem;">Reduced Motion</h3>
+                  <p style="margin:4px 0 0; font-size:0.8rem; color:var(--text-dim);">Minimize animations for accessibility</p>
+                </div>
+                <label class="checkbox-wrap" style="margin:0;">
+                  <input type="checkbox" id="reducedMotion" />
+                </label>
+              </div>
+            </div>
+            <div class="card-liquid">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h3 style="margin:0; font-size:0.95rem;">Compact Mode</h3>
+                  <p style="margin:4px 0 0; font-size:0.8rem; color:var(--text-dim);">Smaller cards and tighter spacing</p>
+                </div>
+                <label class="checkbox-wrap" style="margin:0;">
+                  <input type="checkbox" id="compactMode" />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:32px;">
+            <h3 style="font-size:1.1rem; margin-bottom:16px; color:var(--text-muted);">🔒 Security</h3>
+            <div class="card-liquid" style="margin-bottom:12px;">
+              <h3 style="margin:0 0 8px; font-size:0.95rem;">Change Password</h3>
+              <form id="passwordForm" class="inline-form-liquid" style="margin-bottom:0;">
+                <input type="password" id="currentPassword" placeholder="Current password" required />
+                <input type="password" id="newPassword" placeholder="New password (min 6)" required />
+                <button type="submit" class="btn-liquid small primary">Update</button>
+              </form>
+            </div>
+            <div class="card-liquid">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h3 style="margin:0; font-size:0.95rem; color:var(--danger);">Delete Account</h3>
+                  <p style="margin:4px 0 0; font-size:0.8rem; color:var(--text-dim);">Permanently remove your account and data</p>
+                </div>
+                <button class="btn-liquid small danger" onclick="deleteAccount()">Delete</button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 style="font-size:1.1rem; margin-bottom:16px; color:var(--text-muted);">💾 Data</h3>
+            <div class="card-liquid" style="margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h3 style="margin:0; font-size:0.95rem;">Export Data</h3>
+                  <p style="margin:4px 0 0; font-size:0.8rem; color:var(--text-dim);">Download your ideas and projects as JSON</p>
+                </div>
+                <button class="btn-liquid small ghost" onclick="exportData()">📥 Export</button>
+              </div>
+            </div>
+            <div class="card-liquid">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <h3 style="margin:0; font-size:0.95rem; color:var(--danger);">Clear All Data</h3>
+                  <p style="margin:4px 0 0; font-size:0.8rem; color:var(--text-dim);">Reset all local storage (cannot be undone)</p>
+                </div>
+                <button class="btn-liquid small danger" onclick="clearAllData()">Clear All</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <footer class="footer-liquid">
+      <p>© 2026 Media Core Hub · Full Stack Edition</p>
+    </footer>
+  </div>
+
+  <script src="api.js"></script>
+  <script>
+    function applyTheme() {
+      document.body.setAttribute('data-theme', getTheme());
+    }
+    applyTheme();
+    function toggleTheme() {
+      const next = getTheme() === 'dark' ? 'light' : 'dark';
+      setTheme(next);
+      applyTheme();
+      showToast(`${next === 'dark' ? '🌙' : '☀️'} Switched to ${next} mode`, 'info');
+    }
+
+    function showToast(message, type = 'info', duration = 3000) {
+      const container = document.getElementById('toastContainer');
+      const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${message}</span>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add('show'));
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400);
+      }, duration);
+    }
+
+    function updateAuthNav() {
+      const user = getUser();
+      const authSection = document.getElementById('authSection');
+      if (user) {
+        const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
+        const avatarImg = user.avatar ? `<img src="${user.avatar}" alt="">` : initials;
+        const adminBadge = user.role === 'admin' ? '<span class="admin-badge">ADMIN</span>' : '';
+        authSection.innerHTML = `
+          <div class="nav-user" id="userMenuTrigger" onclick="toggleUserDropdown()">
+            <div class="nav-user-avatar">${avatarImg}</div>
+            <span class="nav-user-name">${user.name}</span>
+            ${adminBadge}
+          </div>
+          <div class="user-dropdown" id="userDropdown">
+            <div class="user-dropdown-item" onclick="window.location.href='dashboard.html'">📊 Dashboard</div>
+            <div class="user-dropdown-item" onclick="window.location.href='profile.html'">👤 Profile</div>
+            <div class="user-dropdown-item" onclick="window.location.href='settings.html'">⚙️ Settings</div>
+            <div class="user-dropdown-divider"></div>
+            <div class="user-dropdown-item" onclick="logout()" style="color:var(--danger);">🚪 Sign Out</div>
+          </div>
+        `;
+      } else {
+        authSection.innerHTML = `<a href="login.html" class="nav-cta-glass">Sign In</a>`;
+      }
+    }
+
+    function toggleUserDropdown() {
+      const dropdown = document.getElementById('userDropdown');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+
+    document.addEventListener('click', (e) => {
+      const dropdown = document.getElementById('userDropdown');
+      const trigger = document.getElementById('userMenuTrigger');
+      if (dropdown && trigger && !dropdown.contains(e.target) && !trigger.contains(e.target)) {
+        dropdown.classList.remove('open');
+      }
+    });
+
+    async function populateSettings() {
+      const user = getUser();
+      if (!user) {
+        showToast('Please sign in first', 'warning');
+        setTimeout(() => window.location.href = 'login.html', 1000);
+        return;
+      }
+
+      const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
+      const avatarEl = document.getElementById('settingsAvatar');
+      if (user.avatar) {
+        avatarEl.innerHTML = `<img src="${user.avatar}" alt="" style="width:100%;height:100%;object-fit:cover;">`;
+      } else {
+        avatarEl.textContent = initials;
+      }
+      document.getElementById('settingsName').textContent = user.name;
+      document.getElementById('settingsRole').textContent = user.role === 'admin' ? 'Admin' : 'Student';
+
+      if (user.role === 'admin') {
+        document.getElementById('adminPanel').style.display = 'block';
+        await loadAdminStats();
+        await loadPendingRequests();
+        await loadRequestHistory();
+      }
+
+      const prefs = JSON.parse(localStorage.getItem('mch_prefs') || '{}');
+      document.getElementById('notifyAssignments').checked = prefs.notifyAssignments !== false;
+      document.getElementById('notifyIdeas').checked = prefs.notifyIdeas !== false;
+      document.getElementById('notifyLeaderboard').checked = prefs.notifyLeaderboard === true;
+      document.getElementById('reducedMotion').checked = prefs.reducedMotion === true;
+      document.getElementById('compactMode').checked = prefs.compactMode === true;
+    }
+
+    function savePrefs() {
+      const prefs = {
+        notifyAssignments: document.getElementById('notifyAssignments').checked,
+        notifyIdeas: document.getElementById('notifyIdeas').checked,
+        notifyLeaderboard: document.getElementById('notifyLeaderboard').checked,
+        reducedMotion: document.getElementById('reducedMotion').checked,
+        compactMode: document.getElementById('compactMode').checked
+      };
+      localStorage.setItem('mch_prefs', JSON.stringify(prefs));
+      showToast('Preferences saved', 'success');
+    }
+
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', savePrefs);
+    });
+
+    async function loadAdminStats() {
+      try {
+        const stats = await apiRequest('/admin/stats');
+        document.getElementById('adminTotalUsers').textContent = stats.totalUsers;
+        document.getElementById('adminTotalAdmins').textContent = stats.totalAdmins;
+        document.getElementById('adminPendingReq').textContent = stats.pendingRequests;
+        document.getElementById('adminTotalReq').textContent = stats.totalRequests;
+      } catch (err) {
+        console.error('Failed to load admin stats:', err);
+      }
+    }
+
+    async function loadPendingRequests() {
+      try {
+        const requests = await AdminAPI.getRequests();
+        const container = document.getElementById('pendingRequests');
+        const count = document.getElementById('pendingCount');
+        const noPending = document.getElementById('noPending');
+
+        count.textContent = requests.length + ' pending';
+
+        if (requests.length === 0) {
+          container.innerHTML = '';
+          noPending.style.display = 'block';
+          return;
+        }
+
+        noPending.style.display = 'none';
+        container.innerHTML = requests.map(req => `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--panel-border);">
+            <div>
+              <div style="font-size:0.95rem; font-weight:600;">${req.name}</div>
+              <div style="font-size:0.8rem; color:var(--text-dim);">${req.email} · @${req.username}</div>
+              <div style="font-size:0.75rem; color:var(--text-dim); margin-top:2px;">Requested: ${new Date(req.createdAt).toLocaleDateString()}</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn-liquid small primary" onclick="approveAdmin('${req._id}')">✅ Approve</button>
+              <button class="btn-liquid small ghost" onclick="rejectAdmin('${req._id}')">❌ Reject</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Failed to load pending requests:', err);
+      }
+    }
+
+    async function loadRequestHistory() {
+      try {
+        const requests = await apiRequest('/admin/requests/all');
+        const container = document.getElementById('requestHistory');
+        const noHistory = document.getElementById('noHistory');
+
+        const history = requests.filter(r => r.status !== 'pending');
+
+        if (history.length === 0) {
+          container.innerHTML = '';
+          noHistory.style.display = 'block';
+          return;
+        }
+
+        noHistory.style.display = 'none';
+        container.innerHTML = history.map(req => {
+          const statusColor = req.status === 'approved' ? 'var(--success)' : 'var(--danger)';
+          const statusIcon = req.status === 'approved' ? '✅' : '❌';
+          return `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--panel-border);">
+              <div>
+                <div style="font-size:0.9rem; font-weight:600;">${req.name} <span style="color:var(--text-dim); font-weight:400;">(@${req.username})</span></div>
+                <div style="font-size:0.75rem; color:var(--text-dim);">${new Date(req.createdAt).toLocaleDateString()}</div>
+              </div>
+              <span style="font-size:0.8rem; color:${statusColor}; font-weight:600;">${statusIcon} ${req.status.toUpperCase()}</span>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Failed to load request history:', err);
+      }
+    }
+
+    async function approveAdmin(id) {
+      try {
+        await AdminAPI.approveRequest(id, 'approve');
+        showToast('Admin request approved! ✅', 'success');
+        await loadAdminStats();
+        await loadPendingRequests();
+        await loadRequestHistory();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function rejectAdmin(id) {
+      try {
+        await AdminAPI.approveRequest(id, 'reject');
+        showToast('Request rejected', 'info');
+        await loadAdminStats();
+        await loadPendingRequests();
+        await loadRequestHistory();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function toggleUsersList() {
+      try {
+        const users = await AdminAPI.getUsers();
+        const list = document.getElementById('allUsersList');
+        const isVisible = list.style.display === 'block';
+
+        if (isVisible) {
+          list.style.display = 'none';
+          return;
+        }
+
+        list.style.display = 'block';
+        list.innerHTML = users.map(u => {
+          const initials = u.name ? u.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
+          const roleColor = u.role === 'admin' ? 'var(--admin)' : 'var(--text-dim)';
+          return `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--panel-border);">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg, var(--accent), var(--accent-2)); display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; color:white;">
+                  ${initials}
+                </div>
+                <div>
+                  <div style="font-size:0.85rem; font-weight:600;">${u.name} <span style="color:${roleColor}; font-size:0.75rem;">[${u.role}]</span></div>
+                  <div style="font-size:0.75rem; color:var(--text-dim);">@${u.username}</div>
+                </div>
+              </div>
+              ${u.role !== 'admin' ? `<button class="btn-liquid small danger" onclick="deleteUser('${u._id}')" style="padding:4px 10px; font-size:0.75rem;">🗑</button>` : ''}
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        showToast('Failed to load users', 'error');
+      }
+    }
+
+    async function deleteUser(id) {
+      if (!confirm('Delete this user?')) return;
+      try {
+        await AdminAPI.deleteUser(id);
+        showToast('User deleted', 'info');
+        toggleUsersList();
+        await loadAdminStats();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const current = document.getElementById('currentPassword').value;
+      const newPass = document.getElementById('newPassword').value;
+
+      if (newPass.length < 6) {
+        showToast('New password must be at least 6 characters', 'warning');
+        return;
+      }
+
+      try {
+        await AuthAPI.changePassword({ currentPassword: current, newPassword: newPass });
+        document.getElementById('passwordForm').reset();
+        showToast('Password updated successfully', 'success');
+      } catch (err) {
+        showToast(err.message || 'Failed to update password', 'error');
+      }
+    });
+
+    async function deleteAccount() {
+      if (!confirm('WARNING: This will permanently delete your account and all data. Are you sure?')) return;
+      if (!confirm('This action cannot be undone. Confirm?')) return;
+
+      try {
+        await apiRequest('/users/me', { method: 'DELETE' });
+        logout();
+        showToast('Account deleted', 'info');
+      } catch (err) {
+        showToast(err.message || 'Failed to delete account', 'error');
+      }
+    }
+
+    async function exportData() {
+      try {
+        const user = getUser();
+        const [posts, projects] = await Promise.all([
+          PostsAPI.getAll().catch(() => []),
+          ProjectsAPI.getAll().catch(() => [])
+        ]);
+
+        const data = {
+          user,
+          ideas: posts.filter(p => p.author && (p.author._id === user.id || p.author.id === user.id)),
+          projects: projects.filter(p => p.createdBy && (p.createdBy._id === user.id || p.createdBy.id === user.id)),
+          exportedAt: new Date().toISOString()
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mch-export-${user.username}-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Data exported! 📥', 'success');
+      } catch (err) {
+        showToast('Export failed', 'error');
+      }
+    }
+
+    function clearAllData() {
+      if (!confirm('This will delete ALL data including ideas, assignments, and user accounts. Are you sure?')) return;
+      if (!confirm('FINAL WARNING: Everything will be lost. Confirm?')) return;
+
+      const keys = Object.keys(localStorage).filter(k => k.startsWith('mch_') || k.startsWith('mediaCore'));
+      keys.forEach(k => localStorage.removeItem(k));
+
+      showToast('All data cleared. Refreshing...', 'warning');
+      setTimeout(() => window.location.href = 'index.html', 1500);
+    }
+
+    populateSettings();
+    updateAuthNav();
+
+    const navGlass = document.getElementById('navGlass');
+    setTimeout(() => navGlass.classList.add('visible'), 300);
+
+    const page = document.getElementById('page');
+    window.addEventListener('load', () => page.classList.add('is-loaded'));
+
+    // Only intercept clicks for same-page smooth scroll (anchor links)
+    // Let all .html links navigate normally
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a');
+      if (!link) return;
+      const url = link.getAttribute('href');
+      if (!url || url.startsWith('mailto:') || link.target === '_blank') return;
+
+      // Only intercept anchor links on same page (#section)
+      if (url.startsWith('#')) {
+        e.preventDefault();
+        const target = document.querySelector(url);
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+
+      // For .html pages, allow normal navigation with fade effect
+      if (url.endsWith('.html') || !url.includes('.')) {
+        e.preventDefault();
+        page.classList.add('is-fading-out');
+        navGlass.style.opacity = '0';
+        navGlass.style.transform = 'translateX(-50%) translateY(-100%)';
+        setTimeout(() => window.location.href = url, 300);
+      }
+    });
+
+    // Subtle orbit
+    const orbitCanvas = document.getElementById('orbit-canvas');
+    const orbitCtx = orbitCanvas.getContext('2d');
+    let orbitParticles = [];
+
+    function resizeOrbit() { orbitCanvas.width = window.innerWidth; orbitCanvas.height = window.innerHeight; }
+    window.addEventListener('resize', resizeOrbit);
+    resizeOrbit();
+
+    for (let i = 0; i < 30; i++) {
+      orbitParticles.push({
+        angle: Math.random() * Math.PI * 2, distance: 250 + Math.random() * 300,
+        speed: 0.001 + Math.random() * 0.003, size: 0.5 + Math.random() * 1.5,
+        color: ['#ff9bf9', '#9bb6ff', '#8bffe0', '#ffffff'][Math.floor(Math.random() * 4)],
+        alpha: 0.15 + Math.random() * 0.25, trail: [], maxTrail: 4 + Math.floor(Math.random() * 6)
+      });
+    }
+
+    function orbitLoop() {
+      const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+      orbitCtx.clearRect(0, 0, orbitCanvas.width, orbitCanvas.height);
+      orbitParticles.forEach(p => {
+        p.angle += p.speed;
+        const x = cx + Math.cos(p.angle) * p.distance;
+        const y = cy + Math.sin(p.angle) * p.distance;
+        p.trail.push({ x, y });
+        if (p.trail.length > p.maxTrail) p.trail.shift();
+        if (p.trail.length > 1) {
+          orbitCtx.beginPath(); orbitCtx.moveTo(p.trail[0].x, p.trail[0].y);
+          for (let i = 1; i < p.trail.length; i++) orbitCtx.lineTo(p.trail[i].x, p.trail[i].y);
+          orbitCtx.strokeStyle = p.color; orbitCtx.lineWidth = p.size * 0.3;
+          orbitCtx.globalAlpha = p.alpha * 0.2; orbitCtx.stroke();
+        }
+        const head = p.trail[p.trail.length - 1];
+        if (head) {
+          orbitCtx.globalAlpha = p.alpha; orbitCtx.fillStyle = p.color;
+          orbitCtx.beginPath(); orbitCtx.arc(head.x, head.y, p.size, 0, Math.PI * 2); orbitCtx.fill();
+        }
+      });
+      orbitCtx.globalAlpha = 1;
+      requestAnimationFrame(orbitLoop);
+    }
+    orbitLoop();
+  </script>
+</body>
+</html>
