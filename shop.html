@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Shop - Media Core Hub</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="vibrant-bg"></div>
+
+<nav class="nav-glass visible" id="navGlass">
+<div class="nav-logo-glass" onclick="window.location.href='index.html'">MC</div>
+<div class="nav-links-glass">
+<a href="index.html">Home</a>
+<a href="ideas.html">Ideas</a>
+<a href="shop.html" class="active">Shop</a>
+<a href="assignments.html">Assignments</a>
+<a href="projects.html">Projects</a>
+<a href="leaderboard.html">Leaderboard</a>
+</div>
+<div style="display:flex; align-items:center; gap:10px;">
+<div class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"></div>
+<div id="authSection"></div>
+</div>
+</nav>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="page is-loaded" id="page">
+
+<!-- Daily Reward -->
+<div id="dailyRewardSection" style="display:none;">
+<div class="daily-reward-card">
+<h3>🎁 Daily Reward</h3>
+<div class="streak-display" id="streakDisplay">🔥 0</div>
+<p style="color:var(--text-muted); margin-bottom:12px;">Day streak</p>
+<button class="btn-liquid primary" id="claimBtn" onclick="claimDaily()">Claim Reward</button>
+<p id="rewardStatus" style="margin-top:8px; font-size:0.8rem; color:var(--text-dim);"></p>
+</div>
+</div>
+
+<section class="panel-liquid">
+<div class="panel-header-liquid">
+<h2>🛒 Points Shop</h2>
+<div class="panel-actions">
+<span class="tag" id="shopPoints">0 points</span>
+</div>
+</div>
+
+<div id="adminGiftPanel" style="display:none; margin-bottom:20px;">
+<div class="gift-panel">
+<h3>🎁 Gift Points (Admin Only)</h3>
+<div style="display:flex; gap:10px; margin-bottom:10px;">
+<input type="text" id="giftUsername" placeholder="Username" style="flex:1; padding:10px; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-main);">
+<input type="number" id="giftAmount" placeholder="Amount" style="width:100px; padding:10px; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-main);">
+<button class="btn-liquid primary" onclick="giftPoints()">Gift</button>
+</div>
+</div>
+</div>
+
+<div id="inventoryDisplay" style="margin-bottom:20px; padding:15px; background:var(--card-bg); border-radius:12px;">
+Loading inventory...
+</div>
+
+<h3 style="margin-bottom:15px;">🖼️ Animated Frames</h3>
+<div id="framesGrid" class="shop-grid"></div>
+
+<h3 style="margin-bottom:15px; margin-top:30px;">🔤 Custom Fonts</h3>
+<div id="fontsGrid" class="shop-grid"></div>
+
+<h3 style="margin-bottom:15px; margin-top:30px;">🎨 Themes</h3>
+<div id="themesGrid" class="shop-grid"></div>
+</section>
+
+</div>
+
+<script src="api.js"></script>
+<script>
+function applyTheme() {
+document.body.setAttribute('data-theme', getTheme());
+}
+applyTheme();
+
+function toggleTheme() {
+var next = getTheme() === 'dark' ? 'light' : 'dark';
+setTheme(next);
+applyTheme();
+showToast((next === 'dark' ? 'Moon' : 'Sun') + ' mode', 'info');
+}
+
+function showToast(message, type, duration) {
+var container = document.getElementById('toastContainer');
+var toast = document.createElement('div');
+toast.className = 'toast ' + (type || 'info');
+toast.innerHTML = '<span>' + message + '</span>';
+container.appendChild(toast);
+setTimeout(function() { toast.classList.add('show'); }, 10);
+setTimeout(function() {
+toast.classList.remove('show');
+setTimeout(function() { toast.remove(); }, 400);
+}, duration || 3000);
+}
+
+var shopItems = [];
+var inventory = null;
+var currentUser = null;
+
+function updateAuthNav() {
+currentUser = getUser();
+var authSection = document.getElementById('authSection');
+if (currentUser) {
+var initials = currentUser.name ? currentUser.name.split(' ').map(function(n) { return n[0]; }).join('').toUpperCase().slice(0, 2) : '?';
+var avatarImg = currentUser.avatar ? '<img src="' + currentUser.avatar + '" style="width:100%;height:100%;object-fit:cover;">' : initials;
+authSection.innerHTML = '<div class="nav-user" onclick="logout()" style="cursor:pointer;"><div class="nav-user-avatar">' + avatarImg + '</div><span class="nav-user-name">' + currentUser.name + '</span></div>';
+document.getElementById('shopPoints').textContent = (currentUser.points || 0) + ' points';
+if (currentUser.role === 'admin') {
+document.getElementById('adminGiftPanel').style.display = 'block';
+}
+} else {
+authSection.innerHTML = '<a href="login.html" class="nav-cta-glass">Sign In</a>';
+}
+}
+
+function loadShop() {
+if (!isLoggedIn()) {
+document.getElementById('framesGrid').innerHTML = '<p style="text-align:center; color:var(--text-dim); padding:40px;">Please <a href="login.html" style="color:var(--accent);">sign in</a> to use the shop.</p>';
+document.getElementById('fontsGrid').innerHTML = '';
+document.getElementById('themesGrid').innerHTML = '';
+document.getElementById('inventoryDisplay').innerHTML = '';
+return;
+}
+
+// Load daily reward
+RewardsAPI.getDaily().then(function(result) {
+if (result.success) {
+document.getElementById('dailyRewardSection').style.display = 'block';
+document.getElementById('streakDisplay').textContent = '🔥 ' + result.streak;
+document.getElementById('rewardStatus').textContent = 'Claimed ' + result.reward + ' pts!';
+document.getElementById('claimBtn').style.display = 'none';
+} else {
+document.getElementById('dailyRewardSection').style.display = 'block';
+document.getElementById('streakDisplay').textContent = '🔥 ' + (result.streak || 0);
+document.getElementById('rewardStatus').textContent = result.error || 'Claim tomorrow!';
+}
+}).catch(function(err) {
+console.log('Daily reward check:', err);
+});
+
+ShopAPI.getItems().then(function(items) {
+shopItems = items;
+return ShopAPI.getInventory();
+}).then(function(inv) {
+inventory = inv;
+renderShop();
+renderInventory();
+}).catch(function(err) {
+console.error('Shop load error:', err);
+showToast('Failed to load shop: ' + (err.message || err), 'error');
+});
+}
+
+function renderShop() {
+var frames = shopItems.filter(function(i) { return i.type === 'frame'; });
+var fonts = shopItems.filter(function(i) { return i.type === 'font'; });
+var themes = shopItems.filter(function(i) { return i.type === 'theme'; });
+
+document.getElementById('framesGrid').innerHTML = frames.map(renderItemCard).join('');
+document.getElementById('fontsGrid').innerHTML = fonts.map(renderItemCard).join('');
+document.getElementById('themesGrid').innerHTML = themes.map(renderItemCard).join('');
+}
+
+function renderItemCard(item) {
+var isOwned = false;
+var isEquipped = false;
+
+if (item.type === 'frame' && inventory && inventory.frames) {
+isOwned = inventory.frames.indexOf(item._id) >= 0;
+isEquipped = inventory.activeFrame === item._id;
+} else if (item.type === 'font' && inventory && inventory.fonts) {
+isOwned = inventory.fonts.indexOf(item._id) >= 0;
+isEquipped = inventory.activeFont === item._id;
+} else if (item.type === 'theme' && inventory && inventory.themes) {
+isOwned = inventory.themes.indexOf(item._id) >= 0;
+isEquipped = inventory.activeTheme === item._id;
+}
+
+var btnText = isEquipped ? 'Equipped' : (isOwned ? 'Equip' : 'Buy (' + item.price + ')');
+var btnClass = isEquipped ? 'equipped' : (isOwned ? 'equip' : 'buy');
+var btnStyle = isEquipped ? 'background:var(--success); color:white;' : (isOwned ? 'background:var(--warning); color:white;' : 'background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:white;');
+
+var html = '<div style="background:var(--card-bg); border:1px solid ' + (isEquipped ? 'var(--warning)' : var(--panel-border)) + '; border-radius:16px; padding:16px; text-align:center; transition:all 0.3s ease;">';
+html += '<div style="font-size:2.5rem; margin-bottom:8px;">' + item.icon + '</div>';
+html += '<div style="font-weight:600; color:var(--text-main); margin-bottom:4px;">' + item.name + '</div>';
+html += '<div style="font-size:0.75rem; color:var(--text-dim); text-transform:uppercase; margin-bottom:12px;">' + item.type + ' | ' + item.rarity + '</div>';
+if (item.type === 'font') {
+html += '<div style="font-family:' + item.fontFamily + '; padding:6px; background:var(--input-bg); border-radius:6px; margin-bottom:12px; font-size:0.9rem;">Preview Text</div>';
+}
+html += '<div style="font-weight:700; color:var(--accent); margin-bottom:12px;">' + (isOwned ? 'OWNED' : item.price + ' pts') + '</div>';
+html += '<button onclick="handleItemClick(\'' + item._id + '\', \'' + item.type + '\')" style="width:100%; padding:10px; border-radius:10px; border:none; font-weight:600; cursor:pointer; ' + btnStyle + '">' + btnText + '</button>';
+html += '</div>';
+return html;
+}
+
+function renderInventory() {
+if (!inventory) return;
+var html = '';
+if (inventory.frames && inventory.frames.length > 0) {
+html += '<div style="margin-bottom:8px;"><strong>Frames:</strong> ' + inventory.frames.length + '</div>';
+}
+if (inventory.fonts && inventory.fonts.length > 0) {
+html += '<div style="margin-bottom:8px;"><strong>Fonts:</strong> ' + inventory.fonts.length + '</div>';
+}
+if (inventory.themes && inventory.themes.length > 0) {
+html += '<div style="margin-bottom:8px;"><strong>Themes:</strong> ' + inventory.themes.length + '</div>';
+}
+if (inventory.badges && inventory.badges.length > 0) {
+html += '<div><strong>Badges:</strong> ' + inventory.badges.length + '</div>';
+}
+if (!html) html = '<span style="color:var(--text-dim);">No items yet. Buy something below!</span>';
+document.getElementById('inventoryDisplay').innerHTML = html;
+}
+
+function handleItemClick(itemId, type) {
+var item = shopItems.find(function(i) { return i._id === itemId; });
+var isOwned = false;
+
+if (type === 'frame' && inventory && inventory.frames) {
+isOwned = inventory.frames.indexOf(itemId) >= 0;
+} else if (type === 'font' && inventory && inventory.fonts) {
+isOwned = inventory.fonts.indexOf(itemId) >= 0;
+} else if (type === 'theme' && inventory && inventory.themes) {
+isOwned = inventory.themes.indexOf(itemId) >= 0;
+}
+
+if (isOwned) {
+ShopAPI.equip(itemId, type).then(function() {
+showToast(item.name + ' equipped!', 'success');
+return ShopAPI.getInventory();
+}).then(function(inv) {
+inventory = inv;
+renderShop();
+}).catch(function(err) {
+showToast(err.message || 'Equip failed', 'error');
+});
+} else {
+ShopAPI.purchase(itemId).then(function(result) {
+showToast('Bought ' + item.name + '! Remaining: ' + result.remainingPoints + ' pts', 'success');
+currentUser.points = result.remainingPoints;
+setUser(currentUser);
+return ShopAPI.getInventory();
+}).then(function(inv) {
+inventory = inv;
+renderShop();
+renderInventory();
+updateAuthNav();
+}).catch(function(err) {
+showToast(err.message || err.error || 'Purchase failed', 'error');
+});
+}
+}
+
+function claimDaily() {
+RewardsAPI.getDaily().then(function(result) {
+if (result.success) {
+showToast('Claimed ' + result.reward + ' pts! Streak: ' + result.streak, 'success');
+currentUser.points = result.points;
+setUser(currentUser);
+updateAuthNav();
+document.getElementById('streakDisplay').textContent = '🔥 ' + result.streak;
+document.getElementById('rewardStatus').textContent = 'Claimed!';
+document.getElementById('claimBtn').style.display = 'none';
+} else {
+showToast(result.error || 'Already claimed', 'warning');
+}
+}).catch(function(err) {
+showToast(err.message || 'Claim failed', 'error');
+});
+}
+
+function giftPoints() {
+var username = document.getElementById('giftUsername').value.trim();
+var amount = parseInt(document.getElementById('giftAmount').value);
+if (!username || !amount || amount <= 0) {
+showToast('Enter username and amount', 'warning');
+return;
+}
+ShopAPI.giftPoints(username, amount).then(function(result) {
+showToast('Gifted ' + amount + ' pts to ' + result.toUser, 'success');
+document.getElementById('giftUsername').value = '';
+document.getElementById('giftAmount').value = '';
+}).catch(function(err) {
+showToast(err.message || 'Gift failed', 'error');
+});
+}
+
+updateAuthNav();
+loadShop();
+</script>
+</body>
+</html>
