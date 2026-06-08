@@ -23,10 +23,6 @@ node server.js
 ### 4. Open Browser
 Go to http://localhost:3000
 
-## 👤 Default Admin Account
-- Username: kasuku
-- Password: kasuku123
-
 ## 🎓 Features
 - Student/Admin authentication
 - Instagram-like posts with media
