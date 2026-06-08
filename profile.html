@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Profile · Media Core Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="vibrant-bg"></div>
+  <canvas id="orbit-canvas" style="opacity:0.3;"></canvas>
+
+  <nav class="nav-glass" id="navGlass">
+    <div class="nav-logo-glass" onclick="window.location.href='index.html'">MC</div>
+    <div class="nav-links-glass">
+      <a href="index.html">Home</a>
+      <a href="ideas.html">Ideas</a>
+      <a href="assignments.html">Assignments</a>
+      <a href="projects.html">Projects</a>
+      <a href="leaderboard.html">Leaderboard</a>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle theme"></div>
+      <div id="authSection"></div>
+    </div>
+  </nav>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="page" id="page">
+    <div class="dashboard-grid">
+      <aside class="sidebar-liquid">
+        <div class="sidebar-profile">
+          <div class="sidebar-avatar" id="profileAvatar" style="width:100px; height:100px; font-size:2.5rem; border-radius:28px; cursor:pointer; position:relative;" onclick="document.getElementById('pfpUpload').click()" title="Click to change profile picture">
+            ?
+            <div style="position:absolute; bottom:0; right:0; width:28px; height:28px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:14px; border:2px solid var(--bg);">📷</div>
+          </div>
+          <input type="file" id="pfpUpload" style="display:none" accept="image/*" onchange="uploadPFP(this)" />
+          <div class="sidebar-name" id="profileName" style="font-size:1.3rem;">Loading...</div>
+          <div class="sidebar-role" id="profileRole">Student</div>
+          <div style="margin-top:12px; font-size:0.8rem; color:var(--text-dim);" id="profileJoined">Joined recently</div>
+        </div>
+        <div class="sidebar-menu">
+          <a href="dashboard.html" class="sidebar-item">📊 Dashboard</a>
+          <a href="profile.html" class="sidebar-item active">👤 Profile</a>
+          <a href="ideas.html" class="sidebar-item">💡 My Ideas</a>
+          <a href="assignments.html" class="sidebar-item">📋 Assignments</a>
+          <a href="settings.html" class="sidebar-item">⚙️ Settings</a>
+          <div class="sidebar-item" onclick="logout()" style="color:var(--danger);">🚪 Sign Out</div>
+        </div>
+      </aside>
+
+      <main class="main-content-liquid">
+        <div class="panel-liquid" style="margin-top:0;">
+          <div class="panel-header-liquid">
+            <h2>Profile Information</h2>
+            <button class="btn-liquid small primary" onclick="toggleEdit()" id="editBtn">Edit Profile</button>
+          </div>
+
+          <form id="profileForm" style="display:none;">
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" class="form-input" id="editName" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Username</label>
+              <input type="text" class="form-input" id="editUsername" disabled style="opacity:0.5;" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-input" id="editEmail" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bio</label>
+              <input type="text" class="form-input" id="editBio" placeholder="Tell us about yourself..." />
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button type="submit" class="btn-liquid small primary">Save Changes</button>
+              <button type="button" class="btn-liquid small ghost" onclick="toggleEdit()">Cancel</button>
+            </div>
+          </form>
+
+          <div id="profileView">
+            <div class="card-grid-liquid two-col">
+              <div class="card-liquid">
+                <h3>📧 Email</h3>
+                <p id="viewEmail">-</p>
+              </div>
+              <div class="card-liquid">
+                <h3>👤 Username</h3>
+                <p id="viewUsername">-</p>
+              </div>
+              <div class="card-liquid" style="grid-column:1/-1;">
+                <h3>📝 Bio</h3>
+                <p id="viewBio" style="color:var(--text-dim);">No bio yet. Click Edit to add one!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-value" id="statIdeas">0</div>
+            <div class="stat-label">Ideas</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statProjects">0</div>
+            <div class="stat-label">Projects</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statPoints">0</div>
+            <div class="stat-label">Points</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statRank">#--</div>
+            <div class="stat-label">Rank</div>
+          </div>
+        </div>
+
+        <div class="panel-liquid">
+          <div class="panel-header-liquid">
+            <h3>Recent Contributions</h3>
+          </div>
+          <div id="contributionsList"></div>
+          <div id="emptyContributions" style="text-align:center; padding:40px; color:var(--text-dim); display:none;">
+            No contributions yet. Start sharing ideas!
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <footer class="footer-liquid">
+      <p>© 2026 Media Core Hub · Full Stack Edition</p>
+    </footer>
+  </div>
+
+  <script src="api.js"></script>
+  <script>
+    let isEditing = false;
+
+    function applyTheme() {
+      document.body.setAttribute('data-theme', getTheme());
+    }
+    applyTheme();
+    function toggleTheme() {
+      const next = getTheme() === 'dark' ? 'light' : 'dark';
+      setTheme(next);
+      applyTheme();
+      showToast(`${next === 'dark' ? '🌙' : '☀️'} Switched to ${next} mode`, 'info');
+    }
+
+    function showToast(message, type = 'info', duration = 3000) {
+      const container = document.getElementById('toastContainer');
+      const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${message}</span>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add('show'));
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 400);
+      }, duration);
+    }
+
+    function updateAuthNav() {
+      const user = getUser();
+      const authSection = document.getElementById('authSection');
+      if (user) {
+        const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
+        const avatarImg = user.avatar ? `<img src="${user.avatar}" alt="">` : initials;
+        const adminBadge = user.role === 'admin' ? '<span class="admin-badge">ADMIN</span>' : '';
+        authSection.innerHTML = `
+          <div class="nav-user" id="userMenuTrigger" onclick="toggleUserDropdown()">
+            <div class="nav-user-avatar">${avatarImg}</div>
+            <span class="nav-user-name">${user.name}</span>
+            ${adminBadge}
+          </div>
+          <div class="user-dropdown" id="userDropdown">
+            <div class="user-dropdown-item" onclick="window.location.href='dashboard.html'">📊 Dashboard</div>
+            <div class="user-dropdown-item" onclick="window.location.href='profile.html'">👤 Profile</div>
+            <div class="user-dropdown-item" onclick="window.location.href='settings.html'">⚙️ Settings</div>
+            <div class="user-dropdown-divider"></div>
+            <div class="user-dropdown-item" onclick="logout()" style="color:var(--danger);">🚪 Sign Out</div>
+          </div>
+        `;
+      } else {
+        authSection.innerHTML = `<a href="login.html" class="nav-cta-glass">Sign In</a>`;
+      }
+    }
+
+    function toggleUserDropdown() {
+      const dropdown = document.getElementById('userDropdown');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+
+    document.addEventListener('click', (e) => {
+      const dropdown = document.getElementById('userDropdown');
+      const trigger = document.getElementById('userMenuTrigger');
+      if (dropdown && trigger && !dropdown.contains(e.target) && !trigger.contains(e.target)) {
+        dropdown.classList.remove('open');
+      }
+    });
+
+    async function uploadPFP(input) {
+      if (!input.files || !input.files[0]) return;
+      try {
+        showToast('Uploading profile picture...', 'info');
+        const uploadData = await UploadAPI.uploadAvatar(input.files[0]);
+        const user = getUser();
+        user.avatar = uploadData.url;
+        setUser(user);
+        populateProfile();
+        updateAuthNav();
+        showToast('Profile picture updated! ✅', 'success');
+      } catch (err) {
+        showToast(err.message || 'Upload failed', 'error');
+      }
+    }
+
+    function toggleEdit() {
+      isEditing = !isEditing;
+      document.getElementById('profileForm').style.display = isEditing ? 'block' : 'none';
+      document.getElementById('profileView').style.display = isEditing ? 'none' : 'block';
+      document.getElementById('editBtn').textContent = isEditing ? 'Cancel' : 'Edit Profile';
+    }
+
+    async function populateProfile() {
+      const user = getUser();
+      if (!user) {
+        showToast('Please sign in first', 'warning');
+        setTimeout(() => window.location.href = 'login.html', 1000);
+        return;
+      }
+
+      const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
+      const avatarEl = document.getElementById('profileAvatar');
+      if (user.avatar) {
+        avatarEl.innerHTML = `<img src="${user.avatar}" alt="" style="width:100%;height:100%;object-fit:cover;"><div style="position:absolute; bottom:0; right:0; width:28px; height:28px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:14px; border:2px solid var(--bg);">📷</div>`;
+      } else {
+        avatarEl.innerHTML = `${initials}<div style="position:absolute; bottom:0; right:0; width:28px; height:28px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:14px; border:2px solid var(--bg);">📷</div>`;
+      }
+      document.getElementById('profileName').textContent = user.name;
+      document.getElementById('profileRole').textContent = user.role === 'admin' ? 'Admin' : 'Student';
+      document.getElementById('profileJoined').textContent = 'Member since ' + new Date().toLocaleDateString();
+
+      document.getElementById('viewEmail').textContent = user.email || '-';
+      document.getElementById('viewUsername').textContent = user.username || '-';
+      document.getElementById('viewBio').textContent = user.bio || 'No bio yet. Click Edit to add one!';
+
+      document.getElementById('editName').value = user.name || '';
+      document.getElementById('editUsername').value = user.username || '';
+      document.getElementById('editEmail').value = user.email || '';
+      document.getElementById('editBio').value = user.bio || '';
+
+      try {
+        const [posts, projects, users] = await Promise.all([
+          PostsAPI.getAll().catch(() => []),
+          ProjectsAPI.getAll().catch(() => []),
+          UsersAPI.getAll().catch(() => [])
+        ]);
+
+        const userPosts = posts.filter(p => p.author && (p.author._id === user.id || p.author.id === user.id));
+        const userProjects = projects.filter(p => p.createdBy && (p.createdBy._id === user.id || p.createdBy.id === user.id));
+        const points = user.points || 0;
+
+        document.getElementById('statIdeas').textContent = userPosts.length;
+        document.getElementById('statProjects').textContent = userProjects.length;
+        document.getElementById('statPoints').textContent = points;
+
+        const sortedUsers = users.sort((a, b) => (b.points || 0) - (a.points || 0));
+        const rank = sortedUsers.findIndex(u => u._id === user.id || u.id === user.id) + 1;
+        document.getElementById('statRank').textContent = rank > 0 ? '#' + rank : '#--';
+
+        const contributions = [...userPosts.map(i => ({ type: 'idea', title: i.title, date: i.createdAt })),
+          ...userProjects.map(p => ({ type: 'project', title: p.name, date: p.createdAt }))]
+          .sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+
+        const contribList = document.getElementById('contributionsList');
+        const emptyContrib = document.getElementById('emptyContributions');
+
+        if (contributions.length === 0) {
+          contribList.innerHTML = '';
+          emptyContrib.style.display = 'block';
+        } else {
+          emptyContrib.style.display = 'none';
+          const icons = { idea: '💡', project: '🚀' };
+          contribList.innerHTML = contributions.map(c => {
+            const date = new Date(c.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return `
+              <div class="activity-item">
+                <div class="activity-icon">${icons[c.type]}</div>
+                <div class="activity-content">
+                  <div class="activity-text">${c.type === 'idea' ? 'Shared idea' : 'Created project'}: <strong>${c.title}</strong></div>
+                  <div class="activity-time">${date}</div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.error('Profile load error:', err);
+      }
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const user = getUser();
+      if (!user) return;
+
+      const name = document.getElementById('editName').value.trim();
+      const email = document.getElementById('editEmail').value.trim();
+      const bio = document.getElementById('editBio').value.trim();
+
+      if (!name) {
+        showToast('Name is required', 'error');
+        return;
+      }
+
+      try {
+        await AuthAPI.updateProfile({ name, email, bio });
+        user.name = name;
+        user.email = email;
+        user.bio = bio;
+        setUser(user);
+        populateProfile();
+        toggleEdit();
+        showToast('Profile updated! ✅', 'success');
+      } catch (err) {
+        showToast(err.message || 'Update failed', 'error');
+      }
+    });
+
+    populateProfile();
+    updateAuthNav();
+
+    const navGlass = document.getElementById('navGlass');
+    setTimeout(() => navGlass.classList.add('visible'), 300);
+
+    const page = document.getElementById('page');
+    window.addEventListener('load', () => page.classList.add('is-loaded'));
+
+    // Only intercept clicks for same-page smooth scroll (anchor links)
+    // Let all .html links navigate normally
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a');
+      if (!link) return;
+      const url = link.getAttribute('href');
+      if (!url || url.startsWith('mailto:') || link.target === '_blank') return;
+
+      // Only intercept anchor links on same page (#section)
+      if (url.startsWith('#')) {
+        e.preventDefault();
+        const target = document.querySelector(url);
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+
+      // For .html pages, allow normal navigation with fade effect
+      if (url.endsWith('.html') || !url.includes('.')) {
+        e.preventDefault();
+        page.classList.add('is-fading-out');
+        navGlass.style.opacity = '0';
+        navGlass.style.transform = 'translateX(-50%) translateY(-100%)';
+        setTimeout(() => window.location.href = url, 300);
+      }
+    });
+
+    // Subtle orbit
+    const orbitCanvas = document.getElementById('orbit-canvas');
+    const orbitCtx = orbitCanvas.getContext('2d');
+    let orbitParticles = [];
+
+    function resizeOrbit() { orbitCanvas.width = window.innerWidth; orbitCanvas.height = window.innerHeight; }
+    window.addEventListener('resize', resizeOrbit);
+    resizeOrbit();
+
+    for (let i = 0; i < 30; i++) {
+      orbitParticles.push({
+        angle: Math.random() * Math.PI * 2, distance: 250 + Math.random() * 300,
+        speed: 0.001 + Math.random() * 0.003, size: 0.5 + Math.random() * 1.5,
+        color: ['#ff9bf9', '#9bb6ff', '#8bffe0', '#ffffff'][Math.floor(Math.random() * 4)],
+        alpha: 0.15 + Math.random() * 0.25, trail: [], maxTrail: 4 + Math.floor(Math.random() * 6)
+      });
+    }
+
+    function orbitLoop() {
+      const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+      orbitCtx.clearRect(0, 0, orbitCanvas.width, orbitCanvas.height);
+      orbitParticles.forEach(p => {
+        p.angle += p.speed;
+        const x = cx + Math.cos(p.angle) * p.distance;
+        const y = cy + Math.sin(p.angle) * p.distance;
+        p.trail.push({ x, y });
+        if (p.trail.length > p.maxTrail) p.trail.shift();
+        if (p.trail.length > 1) {
+          orbitCtx.beginPath(); orbitCtx.moveTo(p.trail[0].x, p.trail[0].y);
+          for (let i = 1; i < p.trail.length; i++) orbitCtx.lineTo(p.trail[i].x, p.trail[i].y);
+          orbitCtx.strokeStyle = p.color; orbitCtx.lineWidth = p.size * 0.3;
+          orbitCtx.globalAlpha = p.alpha * 0.2; orbitCtx.stroke();
+        }
+        const head = p.trail[p.trail.length - 1];
+        if (head) {
+          orbitCtx.globalAlpha = p.alpha; orbitCtx.fillStyle = p.color;
+          orbitCtx.beginPath(); orbitCtx.arc(head.x, head.y, p.size, 0, Math.PI * 2); orbitCtx.fill();
+        }
+      });
+      orbitCtx.globalAlpha = 1;
+      requestAnimationFrame(orbitLoop);
+    }
+    orbitLoop();
+  </script>
+</body>
+</html>
